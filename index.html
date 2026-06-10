@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Un emocionante juego clicker RPG interactivo de derrotar enemigos, conseguir botín legendario y mejorar tus estadísticas.">
+    <title>Hero Clicker RPG - Crónicas de Batalla</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- HEADER: Title, Level/Zone, Player Level & XP -->
+        <header class="game-header glass-panel">
+            <div class="header-logo">
+                <span class="logo-sword">⚔️</span>
+                <h1>HERO CLICKER <span class="accent-text">RPG</span></h1>
+            </div>
+            <div class="zone-navigator">
+                <button id="btn-prev-zone" class="btn-zone-nav" title="Zona anterior">◀</button>
+                <div class="zone-details">
+                    <span class="zone-title" id="txt-zone-name">Cargando Zona...</span>
+                    <span class="zone-progress" id="txt-zone-progress">Progreso: 0/10</span>
+                </div>
+                <button id="btn-next-zone" class="btn-zone-nav" title="Siguiente zona" disabled>▶</button>
+            </div>
+            <div class="player-summary">
+                <div class="xp-container">
+                    <div class="xp-labels">
+                        <span class="player-lvl" id="txt-player-lvl">Nivel 1</span>
+                        <span class="xp-text" id="txt-player-xp">XP: 0 / 100</span>
+                    </div>
+                    <div class="xp-bar-outer">
+                        <div class="xp-bar-inner" id="bar-player-xp" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="sound-control">
+                    <button id="btn-sound-toggle" class="btn-icon" title="Activar/Silenciar sonido">
+                        <svg class="icon-svg" viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18.01,19.86 21,16.28 21,12C21,7.72 18.01,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
+                        </svg>
+                    </button>
+                    <button id="btn-reset-game" class="btn-icon btn-reset" title="Reiniciar partida">
+                        <svg class="icon-svg" viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="game-main">
+            <!-- LEFT PANEL: Stats & Upgrades -->
+            <aside class="panel-left glass-panel">
+                <!-- 1. Estadísticas del personaje (sin oro) -->
+                <section class="player-stats-section">
+                    <h2 class="section-title">Estadísticas</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-label">Vida</span>
+                            <span class="stat-value" id="txt-stat-hp">100 / 100</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Daño Click</span>
+                            <span class="stat-value" id="txt-stat-atk">5</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Daño Auto (DPS)</span>
+                            <span class="stat-value" id="txt-stat-dps">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Defensa</span>
+                            <span class="stat-value" id="txt-stat-def">0</span>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 2. Equipamiento Activo (directamente bajo estadísticas) -->
+                <section class="equipped-section">
+                    <h2 class="section-title">Equipamiento Activo</h2>
+                    <div class="equipment-slots">
+                        <div class="eq-slot" id="slot-weapon" data-slot="arma">
+                            <span class="slot-label">Arma</span>
+                            <div class="slot-content empty" id="eq-weapon-content">Vacío</div>
+                        </div>
+                        <div class="eq-slot" id="slot-armor" data-slot="armadura">
+                            <span class="slot-label">Armadura</span>
+                            <div class="slot-content empty" id="eq-armor-content">Vacío</div>
+                        </div>
+                        <div class="eq-slot" id="slot-accessory" data-slot="accesorio">
+                            <span class="slot-label">Accesorio</span>
+                            <div class="slot-content empty" id="eq-accessory-content">Vacío</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Hojas RPG en pestañas (Atributos & Habilidades) -->
+                <div class="rpg-tabs-container">
+                    <div class="rpg-tabs-headers">
+                        <button class="rpg-tab-btn active" id="tab-btn-attributes">Atributos</button>
+                        <button class="rpg-tab-btn" id="tab-btn-skills">Habilidades</button>
+                    </div>
+                    <div class="rpg-tabs-content">
+                        <!-- Pestaña Atributos -->
+                        <div class="rpg-tab-content-pane" id="pane-attributes">
+                            <section class="attributes-section" style="border: none; padding: 0; margin: 0;">
+                                <div class="attr-points-counter hidden" id="attr-points-indicator">
+                                    ✨ Puntos Disponibles: <span id="txt-attr-points">0</span>
+                                </div>
+                                <div class="attributes-list">
+                                    <div class="attr-row">
+                                        <div class="attr-info">
+                                            <span class="attr-name">💪 Fuerza</span>
+                                            <span class="attr-desc" id="txt-desc-str">+1.0 Daño Click</span>
+                                        </div>
+                                        <div class="attr-control">
+                                            <span class="attr-value" id="txt-val-str">0</span>
+                                            <button class="btn-attr-plus" id="btn-add-str" disabled>+</button>
+                                        </div>
+                                    </div>
+                                    <div class="attr-row">
+                                        <div class="attr-info">
+                                            <span class="attr-name">❤️ Constitución</span>
+                                            <span class="attr-desc" id="txt-desc-con">+10 Vida Máx</span>
+                                        </div>
+                                        <div class="attr-control">
+                                            <span class="attr-value" id="txt-val-con">0</span>
+                                            <button class="btn-attr-plus" id="btn-add-con" disabled>+</button>
+                                        </div>
+                                    </div>
+                                    <div class="attr-row">
+                                        <div class="attr-info">
+                                            <span class="attr-name">⚡ Destreza</span>
+                                            <span class="attr-desc" id="txt-desc-dex">+0.8 DPS Auto</span>
+                                        </div>
+                                        <div class="attr-control">
+                                            <span class="attr-value" id="txt-val-dex">0</span>
+                                            <button class="btn-attr-plus" id="btn-add-dex" disabled>+</button>
+                                        </div>
+                                    </div>
+                                    <div class="attr-row">
+                                        <div class="attr-info">
+                                            <span class="attr-name">🛡️ Reflejos</span>
+                                            <span class="attr-desc" id="txt-desc-ref">+0.4 Defensa</span>
+                                        </div>
+                                        <div class="attr-control">
+                                            <span class="attr-value" id="txt-val-ref">0</span>
+                                            <button class="btn-attr-plus" id="btn-add-ref" disabled>+</button>
+                                        </div>
+                                    </div>
+                                    <div class="attr-row">
+                                        <div class="attr-info">
+                                            <span class="attr-name">🎯 Agilidad</span>
+                                            <span class="attr-desc" id="txt-desc-agi">+1.5% Crítico</span>
+                                        </div>
+                                        <div class="attr-control">
+                                            <span class="attr-value" id="txt-val-agi">0</span>
+                                            <button class="btn-attr-plus" id="btn-add-agi" disabled>+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                        
+                        <!-- Pestaña Habilidades -->
+                        <div class="rpg-tab-content-pane hidden" id="pane-skills">
+                            <section class="skill-upgrades-section" style="border: none; padding: 0; margin: 0;">
+                                <div class="skill-points-counter hidden" id="skill-points-indicator">
+                                    🌟 Puntos de Habilidad: <span id="txt-skill-points">0</span>
+                                </div>
+                                <div class="skill-upgrades-list" id="skill-upgrades-container">
+                                    <!-- Populado dinámicamente -->
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- CENTER PANEL: Combat Screen / Enemy Info -->
+            <section class="panel-center">
+                <!-- Player Health Bar (Floating at top-middle of arena) -->
+                <div class="player-combat-status glass-panel">
+                    <div class="player-header-info">
+                        <span class="player-combat-name">Héroe (Tú)</span>
+                        <span class="player-combat-hp-text" id="txt-player-hp">100 / 100</span>
+                    </div>
+                    <div class="health-bar-outer player-hp-bar">
+                        <div class="health-bar-inner" id="bar-player-hp" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <!-- Arena Area containing Enemy Card and interactive space -->
+                <div class="arena-card glass-panel" id="arena-zone">
+                    <!-- 1. COMBAT VIEW -->
+                    <div id="combat-view" class="arena-subview">
+                        <div class="enemy-header">
+                            <span class="enemy-tag" id="txt-enemy-tag">Normal</span>
+                            <h2 class="enemy-name" id="txt-enemy-name">Cargando Enemigo...</h2>
+                            <span class="enemy-level" id="txt-enemy-lvl">Lvl 1</span>
+                        </div>
+    
+                        <!-- Visual Enemy container -->
+                        <div class="enemy-sprite-container" id="enemy-click-target">
+                            <div class="enemy-sprite" id="enemy-sprite-elem">👾</div>
+                            <!-- Damage numbers will pop here -->
+                            <div id="damage-numbers-container"></div>
+                        </div>
+                        
+                        <!-- NEW: Advance Button inside Combat View when path is clear -->
+                        <div id="combat-advance-container" class="hidden" style="margin: 10px 0; width: 100%; display: flex; justify-content: center; z-index: 10;">
+                            <button id="btn-combat-advance" class="btn-action btn-gold" style="width: 100%; max-width: 260px; font-family: 'Cinzel', serif; font-size: 14px; padding: 12px 28px; margin: 0 auto; display: block;">Avanzar por el Sendero ➡️</button>
+                        </div>
+    
+                        <!-- Enemy Bars -->
+                        <div class="enemy-bars">
+                            <!-- Enemy HP -->
+                            <div class="combat-bar-wrapper">
+                                <div class="bar-label">Vida del Enemigo (<span id="txt-enemy-hp">50 / 50</span>)</div>
+                                <div class="health-bar-outer enemy-hp-bar">
+                                    <div class="health-bar-inner" id="bar-enemy-hp" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <!-- Enemy Attack Progress (Ticks down / loads to attack) -->
+                            <div class="combat-bar-wrapper">
+                                <div class="bar-label">Carga de Ataque Enemigo</div>
+                                <div class="cooldown-bar-outer">
+                                    <div class="cooldown-bar-inner" id="bar-enemy-atk" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. EXPLORING VIEW (Path is clear, waiting to travel) -->
+                    <div id="explore-view" class="arena-subview hidden">
+                        <div class="explore-header">
+                            <h2 class="explore-title">El camino está despejado</h2>
+                            <p class="explore-desc">¿Listo para continuar tu viaje por el sendero?</p>
+                        </div>
+                        <div class="explore-visual">
+                            <span class="explore-emoji">🌲🚶‍♂️🌳</span>
+                        </div>
+                        <button id="btn-advance-node" class="btn-action btn-gold">Avanzar por el Sendero ➡️</button>
+                    </div>
+
+                    <!-- 3. EVENT VIEW (Special Event Text box & decisions) -->
+                    <div id="event-view" class="arena-subview hidden">
+                        <div class="event-header">
+                            <span class="event-badge">❗ Evento Especial</span>
+                            <h2 class="event-title" id="txt-event-title">Misterio en el Sendero</h2>
+                        </div>
+                        <div class="event-body">
+                            <p class="event-desc-text" id="txt-event-desc">Sientes extraño el piso cuando caminas...</p>
+                        </div>
+                        
+                        <!-- Choices container -->
+                        <div class="event-choices" id="event-choices-container">
+                            <!-- Dynamically injected buttons -->
+                        </div>
+
+                        <!-- Merchant shop (inside event view) -->
+                        <div class="merchant-shop hidden" id="merchant-shop-container">
+                            <h3 class="merchant-shop-title">📦 Tienda del Mercader</h3>
+                            <div class="merchant-wares" id="merchant-wares-grid">
+                                <!-- Injected shop items -->
+                            </div>
+                            <button id="btn-close-merchant" class="btn-action btn-danger">Volver al Camino ➡️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills and Resource Panel -->
+                <div class="skills-panel glass-panel" id="skills-panel">
+                    <div class="skills-header">
+                        <span class="skills-section-title">Habilidades Activas</span>
+                        <div class="resource-container" id="class-resource-container">
+                            <span class="resource-label" id="txt-resource-name">Recurso</span>
+                            <div class="resource-bar-outer">
+                                <div class="resource-bar-inner" id="bar-class-resource" style="width: 0%;"></div>
+                                <!-- For Rogue combo points -->
+                                <div class="combo-points-container hidden" id="combo-points-container">
+                                    <div class="combo-point" data-index="1"></div>
+                                    <div class="combo-point" data-index="2"></div>
+                                    <div class="combo-point" data-index="3"></div>
+                                    <div class="combo-point" data-index="4"></div>
+                                    <div class="combo-point" data-index="5"></div>
+                                </div>
+                            </div>
+                            <span class="resource-value" id="txt-resource-value">0 / 100</span>
+                        </div>
+                    </div>
+                    <div class="skills-grid" id="skills-grid-container">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <div class="quick-instructions glass-panel">
+                    <p>💡 <strong>Cómo jugar:</strong> Haz click/tap sobre el enemigo en el centro (o presiona la barra espaciadora) para hacer daño. Presiona del 1 al 4 para lanzar habilidades de clase.</p>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Inventory & Logs -->
+            <aside class="panel-right glass-panel">
+                <section class="inventory-section">
+                    <div class="section-header-flex" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(147, 112, 219, 0.15); padding-bottom: 6px; margin-bottom: 12px;">
+                        <h2 class="section-title" style="margin: 0; border: none; padding: 0; display: flex; align-items: center; gap: 8px;">Mochila <span class="inventory-count" id="txt-inv-count" style="font-size: 11px; color: var(--text-muted); font-weight: normal;">0 / 16</span></h2>
+                        <span id="txt-stat-gold" style="font-weight: bold; color: var(--gold-color); font-size: 16px; text-shadow: 0 0 6px rgba(243, 156, 18, 0.3);">0 🪙</span>
+                    </div>
+                    <div class="inventory-grid" id="inventory-grid-container">
+                        <!-- Slots will be populated dynamically -->
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                        <div class="inv-slot empty"></div>
+                    </div>
+                    <!-- Item Detail Tooltip card -->
+                    <div class="item-detail-panel hidden" id="item-detail-card">
+                        <button id="btn-item-close" class="btn-close" title="Cerrar detalles">×</button>
+                        <div class="item-detail-header">
+                            <span class="item-detail-name" id="txt-detail-name">Objeto</span>
+                            <span class="item-detail-rarity" id="txt-detail-rarity">Común</span>
+                        </div>
+                        <div class="item-detail-body">
+                            <div class="item-detail-slot-type" id="txt-detail-slot">Ranura: Arma</div>
+                            <div class="item-detail-stats" id="txt-detail-stats">+5 Daño</div>
+                            <p class="item-detail-desc" id="txt-detail-desc">Un arma bastante común y desgastada.</p>
+                        </div>
+                        <div class="item-detail-actions">
+                            <button id="btn-item-equip" class="btn-action">Equipar</button>
+                            <button id="btn-item-sell" class="btn-action btn-danger">Vender (<span id="txt-detail-value">0</span> 🪙)</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="logs-section" id="logs-container-section">
+                    <div class="section-header-flex collapsible-header" id="btn-toggle-logs" title="Minimizar/Maximizar registro">
+                        <h2 class="section-title">Registro de Batalla</h2>
+                        <span class="collapse-icon" id="txt-logs-collapse-icon">▼</span>
+                    </div>
+                    <div class="log-console" id="log-console-container">
+                        <div class="log-entry system-log">¡Bienvenido al juego! Derrota enemigos para progresar.</div>
+                    </div>
+                </section>
+            </aside>
+        </main>
+    </div>
+    
+    <!-- Story Modal Overlay -->
+    <div id="story-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-parchment-border">
+                <h2 class="modal-title" id="txt-story-title">Capítulo I: El Bosque Susurrante</h2>
+                <div class="modal-body">
+                    <p id="txt-story-content">Aquí va la historia...</p>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-story-continue" class="btn-action">Continuar aventura ⚔️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Character Creation Modal Overlay -->
+    <div id="char-creation-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel character-creator">
+            <h2 class="modal-title">Crea tu Leyenda</h2>
+            <p class="creator-subtitle">Elige tu nombre y tu senda de combate para comenzar la aventura.</p>
+            
+            <div class="creator-form-group">
+                <label for="input-char-name">Nombre del Héroe:</label>
+                <input type="text" id="input-char-name" maxlength="15" placeholder="Escribe tu nombre..." value="Héroe">
+            </div>
+            
+            <div class="class-cards-container">
+                <!-- Guerrero Card -->
+                <div class="class-card selected" data-class="warrior">
+                    <div class="class-card-header">
+                        <span class="class-icon">🛡️</span>
+                        <h3>Guerrero</h3>
+                    </div>
+                    <p class="class-desc">Un combatiente robusto que confía en su armadura y fuerza física. Aguanta mucho daño y tiene capacidades defensivas.</p>
+                    <div class="class-stats-preview">
+                        <span class="stat-badge hp">+30 Vida</span>
+                        <span class="stat-badge def">+2 Def</span>
+                        <span class="stat-badge atk-neg">-1 Click</span>
+                    </div>
+                    <div class="class-skills-preview">
+                        <h4>Habilidades:</h4>
+                        <ul>
+                            <li>💥 <strong>Golpe de Escudo (Lvl 3):</strong> Aturde al enemigo 3s.</li>
+                            <li>📣 <strong>Grito de Batalla (Lvl 5):</strong> +Defensa y +Atk temporal.</li>
+                            <li>❤️ <strong>Fuerza Indomable (Lvl 8):</strong> Auto-curación.</li>
+                            <li>👑 <strong>Último Bastión (Lvl 12 - Definitiva):</strong> Inmunidad.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Mago Card -->
+                <div class="class-card" data-class="mage">
+                    <div class="class-card-header">
+                        <span class="class-icon">🔮</span>
+                        <h3>Mago</h3>
+                    </div>
+                    <p class="class-desc">Un maestro de los elementos que inflige daño mágico continuo y controla el flujo del tiempo. Es frágil y ofensivo.</p>
+                    <div class="class-stats-preview">
+                        <span class="stat-badge dps">+2 DPS Auto</span>
+                        <span class="stat-badge hp-neg">-15 Vida</span>
+                        <span class="stat-badge atk-neg">-2 Click</span>
+                    </div>
+                    <div class="class-skills-preview">
+                        <h4>Habilidades:</h4>
+                        <ul>
+                            <li>🔥 <strong>Bola de Fuego (Lvl 3):</strong> Daño instantáneo y quemadura.</li>
+                            <li>❄️ <strong>Barrera de Hielo (Lvl 5):</strong> Escudo de inmunidad.</li>
+                            <li>⏳ <strong>Distorsión Temporal (Lvl 8):</strong> Acelera cooldowns.</li>
+                            <li>☄️ <strong>Tormenta de Meteoros (Lvl 12 - Definitiva):</strong> Daño masivo.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Pícaro Card -->
+                <div class="class-card" data-class="rogue">
+                    <div class="class-card-header">
+                        <span class="class-icon">🗡️</span>
+                        <h3>Pícaro</h3>
+                    </div>
+                    <p class="class-desc">Un asesino veloz que aprovecha las debilidades del enemigo y encadena golpes mortales en sucesión rápida.</p>
+                    <div class="class-stats-preview">
+                        <span class="stat-badge crit">+15% Crítico</span>
+                        <span class="stat-badge atk">+1 Click</span>
+                        <span class="stat-badge hp-neg">-10 Vida</span>
+                    </div>
+                    <div class="class-skills-preview">
+                        <h4>Habilidades:</h4>
+                        <ul>
+                            <li>🐍 <strong>Hojas Venenosas (Lvl 3):</strong> Daño y veneno por combo.</li>
+                            <li>👣 <strong>Esquiva Sombría (Lvl 5):</strong> +60% probabilidad de esquivar.</li>
+                            <li>⚡ <strong>Subidón Adrenalina (Lvl 8):</strong> 100% de críticos temporales.</li>
+                            <li>🌪️ <strong>Danza de Hojas (Lvl 12 - Definitiva):</strong> 10 ataques críticos.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="btn-create-character" class="btn-action btn-gold">Comenzar Aventura ⚔️</button>
+        </div>
+    </div>
+
+    <!-- Prologue Modal Overlay -->
+    <div id="prologue-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-parchment-border">
+                <h2 class="modal-title">Prólogo: Las Sombras del Destino</h2>
+                <div class="modal-body prologue-text" style="max-height: 350px; text-align: left; font-style: normal;">
+                    <p>El Reino de Oakhaven ha caído en la penumbra. El Rey Hechicero de las Sombras ha abierto una fisura dimensional, liberando legiones de criaturas oscuras que asolan cada rincón. La vegetación del Bosque Susurrante languidece, las cuevas se cristalizan con magia maldita y el fuego ruge desde las entrañas del Volcán Eterno.</p>
+                    <br>
+                    <p>Como última esperanza del reino, debes adentrarte en las tierras corrompidas. Tu camino estará lleno de peligros, combates mortales, mercaderes ambulantes, trampas insidiosas y eventos misteriosos. Tu objetivo final es explorar los senderos, ascender al Castillo Flotante y sellar la grieta de una vez por todas.</p>
+                    <br>
+                    <p>Toma tu arma, prepara tus conjuros o afila tus hojas. La aventura en el Bosque Susurrante está a punto de comenzar...</p>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-prologue-start" class="btn-action btn-gold">Entrar al Sendero ➡️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Game Scripts -->
+    <script src="game.js"></script>
+</body>
+</html>
