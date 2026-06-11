@@ -1,304 +1,189 @@
-# Hero Clicker RPG — Resumen Completo del Proyecto
+# Hero Clicker RPG v2 — Resumen Completo del Proyecto
 
 Repositorio: https://github.com/arastrox/Clicker-game
+Rama de la reconstrucción: `phaser-rebuild` (la rama `main` conserva la versión 1 en vanilla JS)
+
+---
+
+## 🚀 Stack Tecnológico (v2)
+
+| Tecnología | Rol |
+|---|---|
+| **Phaser 3** (~3.90) | Motor 2D: arena de combate, sprites animados, partículas, cámara, transiciones |
+| **TypeScript** (strict) | Todo el código tipado, con alias `@/` → `src/` |
+| **Vite 6** | Dev server con HMR y build de producción |
+| **HTML/CSS (DOM)** | Paneles RPG con glassmorphism superpuestos al canvas (arquitectura híbrida) |
+| **Web Audio API** | Síntesis de sonido retro en tiempo real, sin archivos de audio |
+
+**Arquitectura híbrida**: Phaser renderiza solo la arena (héroe, enemigos, fondo, efectos); toda la UI de paneles (stats, inventario, habilidades, modales) es DOM. Se comunican por un **bus de eventos tipado** (`src/core/events.ts`).
+
+### Comandos
+```bash
+npm install      # primera vez
+npm run dev      # desarrollo → http://localhost:5173
+npm run build    # type-check + build de producción (dist/)
+```
 
 ---
 
 ## 📁 Estructura de Archivos
 
-| Archivo | Descripción |
-|---|---|
-| `index.html` | Estructura HTML del juego: tres columnas (panel izquierdo, arena central, panel derecho) + modales |
-| `styles.css` | Hoja de estilos completa: glassmorphism, animaciones, sistema de pestañas, raridades, eventos |
-| `game.js` | Motor principal del juego: ~2600 líneas. Estado, clases, mapa, combate, loot, guardado |
-| `resumen.md` | Este documento. Contexto del proyecto para trabajo futuro con agentes/modelos |
+```
+index.html                  Layout de 3 columnas + overlay de arena + modales
+public/assets/
+  sprites/frames/           0x72 DungeonTileset II v1.7 (CC0) — 370 frames animados
+  kenney/                   Kenney Tiny Dungeon (CC0) — íconos 16x16
+  ATTRIBUTION.md            Créditos de assets
+src/
+  main.ts                   Punto de entrada: UI + arranque (save o creación)
+  styles.css                Estilos completos (glassmorphism, rarezas, modales, responsive)
+  core/
+    types.ts                Todos los tipos compartidos
+    state.ts                Estado global tipado + creación de partida nueva
+    save.ts                 localStorage con versionado y migración
+    events.ts               Bus de eventos tipado (sistemas ↔ Phaser ↔ DOM)
+    ready.ts                Cola de arranque (espera a que Phaser cargue assets)
+  data/                     Contenido data-driven (agregar contenido = editar datos)
+    classes.ts              3 clases, atributos, stats base
+    skills.ts               12 habilidades con 3 rangos cada una
+    zones.ts                5 zonas con pools de enemigos, jefes y paletas
+    items.ts                Nombres, rarezas, sprites, efectos únicos, pociones
+    specialEvents.ts        7 eventos especiales con pesos y textos
+    story.ts                Prólogo + 4 capítulos + epílogo del Abismo (ampliada)
+  systems/
+    stats.ts                Stats derivadas con desglose (tooltips)
+    progression.ts          XP, niveles, puntos de atributo/habilidad
+    inventory.ts            Generación procedural de loot, equipar, vender
+    map.ts                  Generación de mapa (10-20 nodos), nivel de enemigos
+    combat.ts               Combate: click, DPS, crítico, esquiva, estados, recursos
+    gameflow.ts             Orquestación: nodos, eventos, jefes, capítulos, muerte
+    rng.ts                  Utilidades de azar
+  scenes/
+    createGame.ts           Crea el juego Phaser (con watchdog de arranque)
+    BootScene.ts            Carga frames y construye animaciones
+    ArenaScene.ts           Arena: sprites, daño flotante, shake, transiciones
+    frameNames.ts           Manifiesto generado de los 370 frames
+  audio/sfx.ts              Sintetizador retro (17 efectos)
+  ui/
+    dom.ts                  Helpers DOM
+    hud.ts                  Header, panel izquierdo, barra de habilidades, log
+    inventoryUi.ts          Mochila 4x4 + detalle de ítem
+    arenaUi.ts              Botón avanzar, panel de eventos, tienda del mercader
+    modals.ts               Creación de personaje, historia, muerte, confirmaciones
+```
 
 ---
 
 ## 🎮 Concepto del Juego
 
-**Hero Clicker RPG** es un juego de navegador (HTML/CSS/JS puro, sin frameworks) de estilo RPG roguelike con progresión guiada por niveles. El jugador:
+**Hero Clicker RPG** es un clicker RPG roguelike de navegador. El jugador:
 
-1. Crea un personaje eligiendo **nombre** y una de las 3 **clases** disponibles.
-2. Lee un **prólogo narrativo** antes de iniciar.
-3. Avanza por un **mapa generado aleatoriamente** (10–20 nodos por zona) presionando el botón "Avanzar por el Sendero ➡️".
-4. En cada nodo puede encontrar un **combate**, un **evento especial**, un **descanso** o un **jefe de zona**.
-5. Sube de nivel, distribuye atributos y desbloquea habilidades de clase.
-
-El juego utiliza **Web Audio API** para síntesis de sonido retro en tiempo real (sin archivos externos).
-
----
-
-## 🗺️ Sistema de Mapa y Progresión
-
-### Zonas (4 en total)
-| Zona | Niveles | Jefe |
-|---|---|---|
-| 🌲 Bosque Susurrante | 1–10 | Orco Gigante 👹 |
-| 💎 Cueva de Cristal | 11–20 | Gólem de Piedra 🪨 |
-| 🌋 Volcán de Fuego Eterno | 21–30 | Dragón de Obsidiana 🐲 |
-| 🏰 Castillo Flotante | 31+ | Rey Hechicero 🧙‍♂️ |
-
-### Tipos de Nodo (por zona)
-- **Enemy** (55%): Combate contra enemigo normal de la zona.
-- **Elite** (15%): Enemigo con 2× HP y 1.5× ATK. Mayor recompensa.
-- **Rest** (15%): Fogata. Permite curar 30% HP.
-- **Event** (15%): Evento especial aleatorio (ver abajo).
-- **Boss** (último nodo): Jefe de zona, desbloquea historia y siguiente zona.
-
-### Eventos Especiales (15% de los nodos)
-| Probabilidad | Tipo | Descripción |
-|---|---|---|
-| 40% | 🏪 Mercader | Tienda emergente con 3–4 equipos + pociones |
-| 30% | 👿 Mimic | Cofre falso que se convierte en combate |
-| 30% | 🌿 Trampa | -15% HP + debuff (-20% Daño Click, -3 Defensa) hasta próximo combate |
+1. Crea un personaje (nombre + 1 de 3 clases, con sprite animado real).
+2. Lee un **prólogo narrativo** (historia de Eldoria y el Rey Hechicero).
+3. Avanza por un **mapa procedural** (10–20 nodos por zona) con el botón "Avanzar por el Sendero ➡️".
+4. En cada nodo: combate, élite, evento especial, descanso o jefe de zona.
+5. Sube de nivel, reparte atributos, mejora habilidades y equipa loot procedural.
+6. Al completar las 4 zonas de campaña se desbloquea el **Abismo Infinito** (post-game con ciclos de dificultad creciente).
 
 ---
 
-## ⚔️ Sistema de Combate
+## 🗺️ Zonas y Progresión
 
-- **Combate activo**: Click sobre el sprite del enemigo (o tecla `Espacio`) para hacer daño.
-- **Combate pasivo (DPS)**: Daño automático cada segundo basado en estadística DPS.
-- **Ataque enemigo**: Barra de carga que al llenarse inflige daño al héroe (mitigado por Defensa).
-- **Críticos**: Probabilidad y multiplicador dependientes de clase y atributos.
-- **Esquiva**: Pícaro puede esquivar ataques en ciertos rangos con habilidades.
-- **Estados alterados**: Quemadura (🔥), Veneno (🐍), Aturdimiento (💫), Inmunidad (🛡️).
-- **Debuffs de trampa**: Se limpian al vencer el siguiente combate.
-
-### Flujo de combate (inline, sin cambio de vista)
-1. El nodo de combate se muestra en la arena central.
-2. El jugador hace click para atacar hasta derrotar al enemigo.
-3. Al derrotarlo, aparece el botón **"Avanzar por el Sendero ➡️"** directamente en la zona de combate.
-4. Al clickear avanza al siguiente nodo sin vistas intermedias.
-
----
-
-## 🏆 Sistema de Clases
-
-### 🛡️ Guerrero
-- **Recurso**: Ira (0–100). Generada al recibir daño.
-- **Modificadores base**: +30 Vida Máx, +2 Defensa, -1 Daño Click.
-- **Habilidades**:
-  | Nivel | Habilidad | Efecto |
-  |---|---|---|
-  | 3 | 💥 Golpe de Escudo | 3× Daño + aturde 3s |
-  | 5 | 📣 Grito de Batalla | +Def +8, +Atk 30% por 8s |
-  | 8 | ❤️ Indomable | Cura 25% HP máximo |
-  | 12 | 👑 Último Bastión *(Ultimate)* | Consume 50 Ira. Inmunidad + ×2 Daño por 6s |
-
-### 🔮 Mago
-- **Recurso**: Maná (0–100). Regeneración pasiva.
-- **Modificadores base**: -15 Vida Máx, -2 Daño Click, +2 DPS Auto.
-- **Habilidades**:
-  | Nivel | Habilidad | Efecto |
-  |---|---|---|
-  | 3 | 🔥 Bola de Fuego | 6× Daño instantáneo + Quemadura 4s |
-  | 5 | ❄️ Barrera de Hielo | Escudo: absorbe 100% daño por 5s |
-  | 8 | ⏳ Distorsión Temporal | DPS +150%, cooldowns al doble por 6s |
-  | 12 | ☄️ Tormenta de Meteoros *(Ultimate)* | 25× Daño masivo + aturde 4s. Cuesta 80 Maná |
-
-### 🗡️ Pícaro
-- **Recurso**: Combo (0–5 puntos). Generado al hacer click.
-- **Modificadores base**: -10 Vida Máx, +1 Daño Click. +15% base crítico.
-- **Habilidades**:
-  | Nivel | Habilidad | Efecto |
-  |---|---|---|
-  | 3 | 🐍 Hojas Venenosas | 2× Daño + veneno 5s (escala con combo) |
-  | 5 | 👣 Esquiva Sombría | +60% probabilidad de esquiva por 5s |
-  | 8 | ⚡ Adrenalina | 100% crítico + doble velocidad de ataque por 6s |
-  | 12 | 🌪️ Danza de Hojas *(Ultimate)* | Consume 5 combos. 10 golpes rápidos de 2.5× Daño |
-
-### Mejora de Habilidades (Rangos)
-- Cada habilidad puede mejorar hasta **Rango 3** usando **Puntos de Habilidad**.
-- Los Puntos de Habilidad se obtienen al subir de nivel (igual que atributos).
-- Los rangos aumentan daño, duración o efectos secundarios de la habilidad.
-
----
-
-## 📊 Sistema de Atributos
-
-Al subir de nivel el jugador recibe **1 Punto de Atributo** para distribuir entre 5 estadísticas. Los bonuses varían ligeramente por clase:
-
-| Atributo | Guerrero | Mago | Pícaro |
+| Zona | Niveles | Jefe | Sprite |
 |---|---|---|---|
-| 💪 Fuerza | +1.0 Daño Click | +0.5 Daño Click | +1.2 Daño Click |
-| ❤️ Constitución | +20 Vida Máx | +8 Vida Máx | +10 Vida Máx |
-| ⚡ Destreza | +0.4 DPS Auto | +1.5 DPS Auto | +0.8 DPS Auto |
-| 🛡️ Reflejos | +0.8 Defensa | +0.3 Defensa | +0.4 Defensa |
-| 🎯 Agilidad | +1.0% Crítico | +1.0% Crítico + 5 Maná | +2.5% Crítico |
+| 🌲 Bosque Susurrante | 1–10 | Orco Gigante, Señor de la Espesura | `ogre` |
+| 💎 Cueva de Cristal | 11–20 | Gólem de Piedra, Corazón de la Caverna | `big_zombie` (tint gris) |
+| 🌋 Volcán de Fuego Eterno | 21–30 | Demonio de Obsidiana, Hijo del Magma | `big_demon` |
+| 🏰 Castillo Flotante | 31–40 | Rey Hechicero, Amo del Castillo | `necromancer` (escala 6, tint púrpura) |
+| 🕳️ Abismo Infinito | 41+ | Avatar del Abismo (cada ciclo +10 niveles) | `big_demon` (tint violeta) |
 
-Los atributos y las habilidades están accesibles desde el **panel izquierdo** bajo un sistema de **pestañas** ("Atributos" / "Habilidades").
+- Cada zona tiene paleta de colores propia (cielo degradado, siluetas, partículas ambientales) y pool de 5-6 enemigos animados.
+- **Nivel enemigo suavizado**: `min(nivel de zona, nivel del jugador + 4)` para evitar saltos imposibles.
+- Tipos de nodo: Enemy 55% · Elite 15% (2×HP, 1.5×ATK) · Rest 15% · Event 15% · Boss (último).
 
----
-
-## 🎒 Sistema de Inventario y Equipamiento
-
-- **Mochila**: 16 ranuras de inventario. El oro se muestra en la cabecera de la mochila.
-- **Ranuras de equipo** (panel izquierdo): Arma, Armadura, Accesorio.
-- **Rareza de ítems**: Común ⚪ → Raro 🔵 → Épico 🟣 → Legendario 🟠.
-- **Generación procedural**: Estadísticas escaladas por nivel del enemigo y rareza.
-  - Arma: +Daño Click
-  - Armadura: +Vida Máx + Defensa
-  - Accesorio: +DPS Auto
-- **Loot al combate**: 25% de probabilidad para enemigos normales, 100% para jefes.
-- **Vender ítems**: Los ítems del inventario se pueden vender por oro desde el panel de detalle.
-
-### Mercader (Evento)
-- 3–4 equipos a la venta (rareza acorde al nivel actual, con 10% de probabilidad de ítem de nivel superior).
-- Pociones disponibles siempre:
-  - 🧪 Poción de Vida: Cura 50% HP (15🪙)
-  - 🧪 Poción de Fuerza: +25% Daño Click para el próximo combate (20🪙)
-  - 🧪 Poción de Regeneración: +5 HP/s por 30s (25🪙)
-  - 🧪 Poción de Maná *(solo Mago)*: +100 Maná (15🪙)
+### Eventos Especiales (7 tipos, con pesos)
+| Peso | Evento | Efecto |
+|---|---|---|
+| 28 | 🏪 Mercader | Tienda: 3-4 equipos + pociones (10% de ítem de nivel superior) |
+| 18 | 👿 Mimic | Cofre animado: abrirlo = combate con botín garantizado; se puede rodear |
+| 14 | 🌿 Trampa | -15% HP + debuff (-20% Daño, -3 Def) hasta **vencer** el próximo combate |
+| 12 | 🗿 Altar | +40% de la XP del nivel actual |
+| 12 | ⛓️ Elección moral | Liberar espíritu (60% premio / 40% combate) o vender cadena (oro seguro) |
+| 10 | ⛲ Manantial | Cura 50% gratis |
+| 6 | ✨ Bendición | +15% Daño, +10% Crítico durante 3 combates |
 
 ---
 
-## 📖 Sistema de Historia
+## ⚔️ Combate
 
-- **Prólogo**: Modal narrativo que aparece al crear el personaje, antes del primer nodo.
-- **Capítulos (4 en total)**: Se desbloquean al derrotar al jefe de cada zona. Pausa el juego y presenta un texto narrativo.
-  - Capítulo I: El despertar en el Bosque Susurrante
-  - Capítulo II: Las profundidades de Cristal
-  - Capítulo III: El aliento del Volcán
-  - Capítulo IV: Las Sombras del Castillo Flotante (final de campaña)
+- **Click / Espacio**: daño activo (toda la arena es clickeable, con pulso visual).
+- **DPS automático** por segundo (con acumulación fraccional).
+- **Barra de carga enemiga**: al llenarse ataca (mitigado por Defensa; mínimo 1).
+- **Críticos** por clase + atributos; **esquiva** (Pícaro 5% base + habilidades).
+- **Estados**: Quemadura 🔥, Veneno 🐍, Aturdimiento 💫 (en enemigo); Inmune/Escudo/Esquiva+ (en jugador).
+- **Regen fuera de combate**: 2% HP máx/seg.
+- **Muerte**: modal de Game Over → revivir al 50% HP (-20% oro) o reiniciar. Tras revivir, el jugador decide cuándo reintentar el nodo (puede equiparse antes).
+- **Efectos visuales**: números de daño flotantes (color por fuente/crítico), shake de cámara, flash de impacto, partículas de muerte, entrada animada de enemigos, transición de fundido entre zonas.
 
----
+## 🏆 Clases (recursos y habilidades idénticas al diseño v1, con rangos 1-3)
 
-## 💾 Sistema de Guardado
+- 🛡️ **Guerrero** (`knight_m`) — Ira (al recibir daño): Golpe de Escudo, Grito de Batalla, Indomable, Último Bastión.
+- 🔮 **Mago** (`wizzard_m`) — Maná (regen pasiva; +5 máx por punto de Agilidad): Bola de Fuego, Barrera de Hielo, Distorsión Temporal (acelera cooldowns ×2), Tormenta de Meteoros.
+- 🗡️ **Pícaro** (`elf_m`) — Combo (por click, 0-5): Hojas Venenosas (escala con combo), Esquiva Sombría, Adrenalina, Danza de Hojas.
 
-- **localStorage**: El estado del juego se guarda automáticamente en cada acción relevante.
-- **Datos guardados**: Clase, nombre, nivel, XP, estadísticas, atributos, habilidades, inventario, equipamiento, oro, progreso de zona/mapa.
-- **Migración de saves**: El código incluye lógica para convertir saves antiguas al nuevo formato de atributos y habilidades.
-- **Reinicio**: Botón 🔄 en la cabecera borra el save y recarga la página.
+Las habilidades se aprenden solas al nivel requerido (3/5/8/12) y se mejoran con Puntos de Habilidad (1 por nivel, igual que atributos).
 
----
+## 🎒 Ítems
 
-## 🖥️ Interfaz (Layout de 3 Columnas)
+- Mochila 16 ranuras, 3 slots de equipo, 4 rarezas con bordes/glow CSS.
+- **Armas**: 27 sprites del tileset, repartidos por rareza. Armadura/accesorio: íconos Kenney.
+- **Efectos únicos** (épico 35% / legendario 100%): Sed de Sangre (robo de vida), Perforante, Codicia (+oro), Sabiduría (+XP), Espinas (refleja daño), Verdugo (+daño a enemigos <25% HP).
+- Loot: 25% normal / 60% élite / 100% jefe y mimic (con bonus de rareza).
 
-### Panel Izquierdo (`panel-left`)
-1. **Estadísticas**: HP, Daño Click, DPS Auto, Defensa.
-2. **Equipamiento Activo**: Arma, Armadura, Accesorio (con slots vacíos estilizados).
-3. **Pestañas RPG**:
-   - `Atributos`: Lista de los 5 atributos con botones `+` y puntos disponibles.
-   - `Habilidades`: Lista de habilidades de clase con rango actual y botón de mejora.
-   - Indicadores de puntos disponibles (✨/🌟) en las pestañas si hay puntos pendientes.
+## 📖 Historia
 
-### Panel Central (`panel-center`)
-- **Barra de HP del jugador** (flotante arriba).
-- **Arena de combate** con 3 subvistas exclusivas:
-  - `combat-view`: Sprite del enemigo, barras de HP y carga de ataque, botón inline de avanzar.
-  - `explore-view`: Vista de camino despejado (prácticamente no usada en el flujo actual).
-  - `event-view`: Contexto del evento + opciones de elección + tienda del mercader.
-- **Panel de habilidades activas**: 4 slots (teclas 1–4), barra de recurso de clase, puntos combo (Pícaro).
-- **Panel de instrucciones**: Pequeña guía de controles.
+Narrativa ampliada con arco completo: prólogo, 4 capítulos (uno por jefe, con la trama de los 4 sellos del Rey Hechicero), epílogo del Abismo e intros de zona. Releíble desde el botón 📖 del header (solo capítulos desbloqueados). Los textos interpolan `{name}` y `{class}`.
 
-### Panel Derecho (`panel-right`)
-- **Mochila**: 16 ranuras de inventario en grid 4×4. Oro en la cabecera.
-- **Detalle de ítem**: Panel emergente con nombre, rareza, estadísticas, descripción, botones Equipar/Vender.
-- **Registro de Batalla**: Log colapsable con historial de eventos (daño, loot, niveles, etc.).
+## 💾 Guardado
 
-### Header
-- Logo + Nombre del juego.
-- Navegador de zonas con nombre de zona actual y progreso.
-- Barra de XP + nivel del jugador.
-- Controles: Silenciar 🔊 y Reiniciar 🔄.
+- localStorage automático en cada acción relevante (clave `hero-clicker-rpg-save`).
+- `SAVE_VERSION` con migración de versiones anteriores.
+- Reinicio con **modal de confirmación** (ya no borra por accidente).
 
 ---
 
-## 🔊 Sistema de Audio (Web Audio API)
+## ✅ Estado actual (qué se hizo en la v2)
 
-Sin archivos externos. Síntesis en tiempo real:
-- `click`: Golpe al enemigo (onda triangular descendente).
-- `enemy_hit`: Daño recibido por el jugador (tono grave).
-- `level_up`: Fanfarria ascendente al subir de nivel.
-- `loot`: Arpegio alegre al obtener ítem.
-- `boss_defeat`: Secuencia dramática al derrotar jefe.
+Bugs v1 resueltos:
+- [x] Debuff de trampa: se aplica al próximo combate y se limpia al vencerlo (y al morir).
+- [x] Estilos del mercader: tienda nueva (`.merchant-item`) integrada al panel de eventos.
+- [x] `explore-view` eliminada: el flujo es 100% inline en la arena.
 
----
+Mejoras implementadas:
+- [x] Pantalla de muerte con revivir/reiniciar.
+- [x] 4 eventos nuevos (altar, elección moral, manantial, bendición).
+- [x] Barra de progreso del mapa en el header (nodos + jefe).
+- [x] Transiciones de nodo/zona animadas (run del héroe, fundidos, flash).
+- [x] Regen de HP fuera de combate.
+- [x] Ítems con efectos únicos.
+- [x] 5ª zona / modo infinito (Abismo).
+- [x] Tooltips con desglose de stats (base/clase/atributos/equipo/efectos).
+- [x] Confirmación de reset.
+- [x] Historia releíble + volumen narrativo ampliado.
+- [x] Responsive: breakpoint <980px apila los paneles.
+- [x] Arquitectura modular (24 módulos TS) + contenido data-driven.
 
-## ❗ Tareas Pendientes / Mejoras Futuras
+Notas técnicas importantes:
+- **Phaser se crea recién cuando `#app` es visible** (`createGame.ts`): si el contenedor mide 0×0, el renderer WebGL arranca corrupto. No mover ese orden.
+- `?st` en la URL fuerza el bucle por `setTimeout` (útil con ventanas en segundo plano / throttling de RAF).
+- `frameNames.ts` es generado desde `public/assets/sprites/frames` — regenerarlo si se agregan sprites.
+- Convención de animaciones 0x72: héroes/enemigos grandes tienen `X_idle_anim`/`X_run_anim`/`X_hit_anim`; criaturas simples solo `X_anim`; cofres `chest_*_open_anim` (3 frames). `ArenaScene.animKeyFor()` resuelve automáticamente.
 
-### 🔴 Bugs conocidos / Correcciones críticas
-- [ ] **Debuff de trampa no se limpia correctamente**: El debuff de ataque/defensa de la trampa debe limpiarse al iniciar el siguiente combate, no solo al terminar. Revisar la función `resolveNode`.
-- [ ] **Merchant wares rendering**: El grid del mercader usa clases `merchant-ware-card` que no tienen estilos definidos en `styles.css` (hay estilos para `.merchant-item` en cambio). Revisar inconsistencia de nombres de clase CSS.
-- [ ] **explore-view nunca se muestra**: Con el flujo actual de combate inline, la vista `#explore-view` quedó sin uso funcional real. Puede eliminarse o reaprovecharse.
+## 🔜 Ideas futuras (pendientes)
 
-### 🟡 Mejoras de jugabilidad
-- [ ] **Sistema de muerte/game over**: Actualmente si el héroe llega a 0 HP no hay pantalla de game over, solo el HP queda en 0. Implementar modal de muerte con opción de reiniciar o continuar desde save.
-- [ ] **Más tipos de eventos**: Ampliar los 3 eventos actuales. Ideas posibles:
-  - Evento de XP extra (altar, reliquia).
-  - Evento de elección moral (riesgo/recompensa variable).
-  - Evento de curación parcial gratuita (manantial mágico).
-  - Evento de mejora temporal de stats (bendición).
-- [ ] **Barra de progreso del mapa**: Mostrar visualmente en cuántos nodos del total va el jugador en la zona (por ejemplo una barra o una fila de íconos).
-- [ ] **Animación de transición entre nodos**: Un pequeño fundido o animación al avanzar entre nodos para dar sensación de movimiento.
-- [ ] **Regen de HP fuera de combate**: Entre combates el jugador debería recuperar HP pasivamente (o hay que indicar claramente que no regenera).
-
-### 🟡 Mejoras de contenido
-- [ ] **Más ítems en la pool**: Ampliar los arrays `ITEM_NAMES` con más nombres creativos por rareza y slot.
-- [ ] **Ítems especiales con efectos únicos**: Actualmente todos los ítems dan stats planos. Se podría agregar efectos especiales como "5% de drenar vida en cada golpe" o "10% de chance de ignorar defensa".
-- [ ] **Sets de ítems o sinergias**: Bonus adicional al llevar ciertos ítems combinados.
-- [ ] **Zona adicional / Post-game**: Una 5ª zona o modo infinito con dificultad escalada para contenido post-campaña.
-
-### 🟢 Mejoras de interfaz / UX
-- [ ] **Tooltips en atributos del panel izquierdo**: Al pasar el ratón sobre los valores de estadísticas (HP, ATK, etc.) mostrar un breakdown de cómo se calculó ese valor.
-- [ ] **Confirmación de reset**: El botón 🔄 de reinicio actualmente no pide confirmación. Se podría agregar un modal de confirmación para evitar pérdidas accidentales.
-- [ ] **Indicador visual de nivel requerido en habilidades bloqueadas**: Actualmente el cover de habilidad bloqueada muestra el nivel requerido, pero podría mejorarse visualmente.
-- [ ] **Historia accesible desde el menú**: Permitir releer los capítulos de historia desbloqueados desde algún lugar del UI.
-- [ ] **Responsive / mobile**: El layout de 3 columnas no está optimizado para pantallas pequeñas. Se podría agregar un breakpoint mobile que apile o reorganice los paneles.
-
-### 🔵 Técnico / Arquitectura
-- [ ] **Refactorizar `game.js`**: El archivo tiene ~2600 líneas en un solo archivo. Sería beneficioso dividirlo en módulos: `state.js`, `combat.js`, `map.js`, `skills.js`, `items.js`, `ui.js`, `audio.js`.
-- [ ] **Internacionalización**: Todo el texto está en español hardcodeado. Si se quisiera publicar para más audiencias, centralizar strings sería el primer paso.
-- [ ] **Persistencia mejorada**: En lugar de serializar todo el `state` en localStorage, se podría usar IndexedDB para mayor capacidad y robustez.
-
----
-
-## 🚀 Cómo ejecutar localmente
-
-```bash
-# Opción 1: Python (sin instalación extra si ya tienes Python 3)
-cd c:\webgame
-python -m http.server 8000
-# Luego abre: http://localhost:8000
-
-# Opción 2: Node.js con npx
-npx serve c:\webgame
-```
-
----
-
-## 📌 Contexto técnico relevante para agentes
-
-- **Sin frameworks**: HTML/CSS/JS puro. Todo en 3 archivos.
-- **Estado del juego**: Variable global `state` en `game.js` (línea 2). Todo el estado vive ahí.
-- **Bucle principal**: `requestAnimationFrame` con delta time. En `game.js` buscar `gameLoop`.
-- **IDs HTML clave**:
-  - `#combat-view`, `#explore-view`, `#event-view`: Subvistas de la arena (solo una visible a la vez, controlada por `.hidden`).
-  - `#combat-advance-container` / `#btn-combat-advance`: Botón de avanzar inline en combate.
-  - `#event-choices-container`: Donde se inyectan dinámicamente los botones de eventos.
-  - `#merchant-shop-container`: Tienda del mercader (dentro de `#event-view`).
-  - `#pane-attributes`, `#pane-skills`: Paneles de pestañas del sidebar izquierdo.
-  - `#tab-btn-attributes`, `#tab-btn-skills`: Botones de pestaña.
-  - `#inventory-grid-container`: Grid de la mochila.
-  - `#skill-upgrades-container`: Lista de mejoras de habilidades (generada dinámicamente).
-  - `#skills-grid-container`: Botones de habilidades activas en el panel central.
-- **Funciones clave en `game.js`**:
-  - `generateMap()`: Genera los nodos de la zona actual.
-  - `advanceNode()`: Avanza al siguiente nodo del mapa.
-  - `resolveNode(node)`: Decide qué mostrar según el tipo de nodo.
-  - `spawnEnemyForNode(node)`: Genera estadísticas del enemigo.
-  - `setupRestNode()` / `setupSpecialEventNode()`: Configuran los eventos de descanso y eventos especiales.
-  - `openMerchantShop()` / `renderMerchantShop()`: Lógica de la tienda.
-  - `getPlayerAtk()`, `getPlayerDef()`, `getPlayerDps()`, `getPlayerMaxHp()`: Calculan stats totales del jugador.
-  - `renderAttributesUI()` / `renderSkillUpgradesUI()`: Renderizan los paneles de atributos y habilidades.
-  - `updateUI()`: Función principal de refresco de toda la UI.
-  - `saveGame()` / `loadGame()`: Persistencia en localStorage.
-  - `addLog(msg, type)`: Añade entrada al registro de batalla.
-  - `showSubview(name)`: Muestra `combat`, `explore` o `event` ocultando los demás.
-  - `showAdvanceButtonInEvent()`: Inyecta el botón de avanzar dentro del contenedor de eventos.
-- **CSS importante**:
-  - `.hidden { display: none !important; }`: Clase utilitaria global. Su ausencia causaría bugs de vistas superpuestas.
-  - `.rpg-tabs-container`, `.rpg-tab-btn.active`, `.rpg-tab-content-pane`: Sistema de pestañas del sidebar.
-  - `.arena-subview`: Clase base de todas las subvistas de la arena.
-  - Raridades: `.rarity-comun`, `.rarity-raro`, `.rarity-epico`, `.rarity-legendario`.
+- [ ] Sets de ítems con sinergias.
+- [ ] Internacionalización (strings centralizados).
+- [ ] Atlas de texturas (empaquetar los 370 PNG en uno) para acelerar la carga.
+- [ ] Logros / estadísticas de partida.
+- [ ] Más jefes únicos para los ciclos del Abismo.
+- [ ] Modo táctil/mobile pulido (botón de ataque dedicado).

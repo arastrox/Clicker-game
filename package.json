@@ -1,0 +1,18 @@
+{
+  "name": "hero-clicker-rpg",
+  "version": "2.0.0",
+  "description": "Hero Clicker RPG — clicker RPG roguelike de navegador (Phaser 3 + TypeScript)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "^3.87.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  }
+}
