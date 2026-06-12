@@ -49,17 +49,24 @@ export function closeModal(): void {
 
 // ─── Creación de personaje ───────────────────────────────────────────────────
 
+const CLASS_FUR_FILTER: Record<ClassId, string> = {
+  warrior: 'sepia(1) saturate(2.4) hue-rotate(-12deg) brightness(1.04)',
+  mage: 'sepia(1) saturate(1.8) hue-rotate(214deg) brightness(1.05)',
+  rogue: 'sepia(0.5) saturate(0.9) hue-rotate(170deg) brightness(0.96)',
+};
+
 export function showCharacterCreation(): void {
   const modal = openModal();
   modal.innerHTML = `
-    <h2>⚔️ Hero Clicker RPG</h2>
-    <p style="text-align:center;color:var(--text-dim);margin-bottom:18px;font-size:13px">
-      Eldoria agoniza bajo el dominio del Rey Hechicero.<br>Forja a tu héroe y recorre el sendero.
+    <h2>🐱 Hero Clicker RPG<br><span style="font-size:9px;color:var(--accent2)">Crónicas de Felandia</span></h2>
+    <p style="text-align:center;color:var(--text-dim);margin-bottom:18px;font-size:var(--t-sm)">
+      Felandia agoniza bajo el dominio del Lince Hechicero.<br>
+      Elige a tu gata heroína: te queda una sola vida de las siete... que cuente.
     </p>
-    <input id="name-input" maxlength="16" placeholder="Nombre de tu héroe..." autocomplete="off">
+    <input id="name-input" maxlength="16" placeholder="Nombre de tu gata..." autocomplete="off">
     <div class="class-grid"></div>
     <div class="modal-actions">
-      <button class="primary-btn" id="btn-create" disabled style="opacity:.4">Despertar en Eldoria</button>
+      <button class="primary-btn" id="btn-create" disabled style="opacity:.4">Despertar en Felandia</button>
     </div>`;
 
   let selected: ClassId | null = null;
@@ -77,7 +84,7 @@ export function showCharacterCreation(): void {
     const cls = CLASSES[id];
     const card = el('div', 'class-card');
     card.innerHTML = `
-      <div class="cc-sprite"><img src="assets/sprites/frames/${cls.spriteKey}_idle_anim_f0.png" alt="${cls.name}"></div>
+      <div class="cc-sprite"><img src="assets/sprites/frames/${cls.spriteKey}_idle_anim_f0.png" alt="${cls.name}" style="filter:${CLASS_FUR_FILTER[id]}"></div>
       <div class="cc-name">${cls.emoji} ${cls.name}</div>
       <div class="cc-desc">${cls.desc}</div>`;
     card.addEventListener('click', () => {
@@ -152,14 +159,16 @@ function showDeathModal(): void {
   const s = getState();
   const modal = openModal();
   modal.innerHTML = `
-    <div class="death-skull">💀</div>
+    <div class="death-skull">🙀</div>
     <h2>Has Caído</h2>
-    <p style="text-align:center;color:var(--text-dim);font-size:13px;line-height:1.7">
-      La oscuridad te envuelve, ${s.player.name}... pero tu historia no termina aquí.<br>
-      Despertarás junto a la última fogata con la mitad de tu vida<br>(y 20% menos oro en los bolsillos).
+    <p style="text-align:center;color:var(--text-dim);font-size:var(--t-md);line-height:1.7">
+      La oscuridad te envuelve, ${s.player.name}... pero las gatas de leyenda no mueren tan fácil:<br>
+      la Gran Gata aún no quiere verte en sus tejados.<br><br>
+      Despertarás junto a la última fogata con la mitad de tu vida<br>
+      (y 20% menos oro en los bolsillos — los cuervos no perdonan).
     </p>
     <div class="modal-actions">
-      <button class="primary-btn" id="btn-revive">🔥 Despertar y reintentar</button>
+      <button class="primary-btn" id="btn-revive">🔥 Aferrarte a tu séptima vida</button>
       <button class="ghost-btn" id="btn-give-up">⚰️ Abandonar (borrar partida)</button>
     </div>`;
   modal.querySelector('#btn-revive')!.addEventListener('click', () => {

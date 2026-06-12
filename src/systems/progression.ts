@@ -5,6 +5,9 @@ import { xpToNext, getMaxHp, uniqueEffectValue } from './stats';
 import { skillsForClass, MAX_SKILL_RANK, getSkill } from '@/data/skills';
 import type { AttrId } from '@/core/types';
 
+// Nivel a partir del cual se pueden mejorar los rangos de habilidad
+export const SKILL_UPGRADE_LEVEL = 13;
+
 export function gainXp(amount: number): void {
   const s = getState();
   const boosted = Math.round(amount * (1 + uniqueEffectValue('xpboost')));
@@ -15,7 +18,9 @@ export function gainXp(amount: number): void {
     s.player.xp -= xpToNext(s.player.level);
     s.player.level += 1;
     s.player.attrPoints += 1;
-    s.player.skillPoints += 1;
+    // los puntos de mejora de habilidad se ganan recién desde el nivel 13
+    // (cuando ya se aprendieron las 4 habilidades)
+    if (s.player.level >= SKILL_UPGRADE_LEVEL) s.player.skillPoints += 1;
     leveled = true;
 
     // Las habilidades se aprenden automáticamente (rango 1) al alcanzar su nivel
@@ -30,7 +35,8 @@ export function gainXp(amount: number): void {
   if (leveled) {
     // subir de nivel restaura un 30% de la vida máxima
     s.player.hp = Math.min(getMaxHp(), s.player.hp + Math.round(getMaxHp() * 0.3));
-    log(`🎉 ¡Nivel ${s.player.level} alcanzado! +1 punto de atributo, +1 punto de habilidad`, 'level');
+    const skillNote = s.player.level >= SKILL_UPGRADE_LEVEL ? ', +1 punto de habilidad' : '';
+    log(`🎉 ¡Nivel ${s.player.level} alcanzado! +1 punto de atributo${skillNote}`, 'level');
     bus.emit('player:levelUp', { level: s.player.level });
   }
   saveGame();
@@ -59,6 +65,7 @@ export function spendAttrPoint(attr: AttrId): boolean {
 
 export function upgradeSkill(skillId: string): boolean {
   const s = getState();
+  if (s.player.level < SKILL_UPGRADE_LEVEL) return false;
   const rank = s.player.skillRanks[skillId] ?? 0;
   if (rank === 0 || rank >= MAX_SKILL_RANK || s.player.skillPoints <= 0) return false;
   s.player.skillPoints -= 1;

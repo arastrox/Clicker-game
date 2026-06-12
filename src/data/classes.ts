@@ -9,14 +9,17 @@ const attrBonus = (vals: [number, number, number, number, number]): Record<AttrI
   agilidad: vals[4],
 });
 
+// Las tres heroínas felinas comparten el sprite `cat` con pelajes distintos.
 export const CLASSES: Record<ClassId, ClassDef> = {
   warrior: {
     id: 'warrior',
-    name: 'Guerrero',
+    name: 'Guerrera',
     emoji: '🛡️',
-    desc: 'Un bastión de acero. Gana Ira al recibir daño y la descarga en golpes devastadores. Más vida y defensa, ideal para resistir.',
-    spriteKey: 'knight_m',
-    resource: { name: 'Ira', emoji: '🔥', max: 100, color: '#e74c3c' },
+    desc: 'Una gata de pelaje atigrado y corazón de león. Gana Ira al recibir daño y la descarga en zarpazos devastadores. Más vida y defensa.',
+    spriteKey: 'cat',
+    tint: 0xffb070,
+    heroScale: 2.8,
+    resource: { name: 'Ira', emoji: '🔥', max: 100, color: '#ff6b81' },
     baseMods: { maxHp: 30, clickDmg: -1, defense: 2, dps: 0 },
     critBase: 5,
     critMult: 1.8,
@@ -24,11 +27,13 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   },
   mage: {
     id: 'mage',
-    name: 'Mago',
+    name: 'Hechicera',
     emoji: '🔮',
-    desc: 'Tejedor de lo arcano. Su maná se regenera solo y alimenta hechizos de daño masivo. Frágil de cuerpo, terrible de poder.',
-    spriteKey: 'wizzard_m',
-    resource: { name: 'Maná', emoji: '💧', max: 100, color: '#3498db' },
+    desc: 'Una gata lila que aprendió magia mirando la luna. Su maná se regenera en combate y alimenta hechizos devastadores. Frágil pero terrible.',
+    spriteKey: 'cat',
+    tint: 0xcf9fff,
+    heroScale: 2.8,
+    resource: { name: 'Maná', emoji: '💧', max: 100, color: '#b388ff' },
     baseMods: { maxHp: -15, clickDmg: -2, defense: 0, dps: 2 },
     critBase: 5,
     critMult: 2.0,
@@ -36,11 +41,13 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   },
   rogue: {
     id: 'rogue',
-    name: 'Pícaro',
+    name: 'Pícara',
     emoji: '🗡️',
-    desc: 'Sombra entre sombras. Acumula puntos de Combo con cada golpe y los gasta en ráfagas letales. Críticos altísimos y esquiva.',
-    spriteKey: 'elf_m',
-    resource: { name: 'Combo', emoji: '⚡', max: 5, color: '#f1c40f' },
+    desc: 'Una gata gris que camina entre sombras y tejados. Acumula Combo con cada zarpazo y lo gasta en ráfagas letales. Críticos altísimos y esquiva.',
+    spriteKey: 'cat',
+    tint: 0x9fb4cc,
+    heroScale: 2.8,
+    resource: { name: 'Combo', emoji: '⚡', max: 5, color: '#ffd54f' },
     baseMods: { maxHp: -10, clickDmg: 1, defense: 0, dps: 0 },
     critBase: 15,
     critMult: 2.2,
@@ -58,7 +65,7 @@ export const ATTR_INFO: Record<AttrId, { name: string; emoji: string; desc: stri
 
 export const ATTR_IDS: AttrId[] = ['fuerza', 'constitucion', 'destreza', 'reflejos', 'agilidad'];
 
-// Stats base del héroe (antes de clase, atributos y equipo)
+// Stats base de la heroína (antes de clase, atributos y equipo)
 export const BASE_STATS = {
   maxHp: 100,
   clickDmg: 5,

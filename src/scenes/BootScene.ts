@@ -30,11 +30,13 @@ export class BootScene extends Phaser.Scene {
     }
     for (const [prefix, frames] of groups) {
       frames.sort();
+      const oneShot = ['hit', 'open', 'attack', 'die'].some((k) => prefix.includes(k));
+      const frameRate = prefix.includes('attack') ? 16 : prefix.includes('die') ? 10 : frames.length <= 3 ? 5 : 7;
       this.anims.create({
         key: prefix,
         frames: frames.map((f) => ({ key: f })),
-        frameRate: frames.length <= 3 ? 5 : 7,
-        repeat: prefix.includes('hit') || prefix.includes('open') ? 0 : -1,
+        frameRate,
+        repeat: oneShot ? 0 : -1,
       });
     }
 

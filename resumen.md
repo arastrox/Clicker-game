@@ -1,21 +1,21 @@
-# Hero Clicker RPG v2 — Resumen Completo del Proyecto
+# Hero Clicker RPG v2.1 — Crónicas de Felandia 🐱
 
 Repositorio: https://github.com/arastrox/Clicker-game
-Rama de la reconstrucción: `phaser-rebuild` (la rama `main` conserva la versión 1 en vanilla JS)
+Rama activa: `phaser-rebuild` (la rama `main` conserva la v1 en vanilla JS)
 
 ---
 
-## 🚀 Stack Tecnológico (v2)
+## 🚀 Stack Tecnológico
 
 | Tecnología | Rol |
 |---|---|
-| **Phaser 3** (~3.90) | Motor 2D: arena de combate, sprites animados, partículas, cámara, transiciones |
+| **Phaser 3** (~3.90) | Motor 2D: arena de combate, sprites animados, partículas, FX de habilidades, transiciones |
 | **TypeScript** (strict) | Todo el código tipado, con alias `@/` → `src/` |
 | **Vite 6** | Dev server con HMR y build de producción |
-| **HTML/CSS (DOM)** | Paneles RPG con glassmorphism superpuestos al canvas (arquitectura híbrida) |
-| **Web Audio API** | Síntesis de sonido retro en tiempo real, sin archivos de audio |
+| **HTML/CSS (DOM)** | Paneles RPG pixel morado/rosado superpuestos al canvas (arquitectura híbrida) |
+| **Web Audio API** | SFX retro **y música chiptune secuenciada**, sin archivos de audio |
 
-**Arquitectura híbrida**: Phaser renderiza solo la arena (héroe, enemigos, fondo, efectos); toda la UI de paneles (stats, inventario, habilidades, modales) es DOM. Se comunican por un **bus de eventos tipado** (`src/core/events.ts`).
+**Arquitectura híbrida**: Phaser renderiza la arena (heroína, enemigos, fondo, efectos); la UI de paneles es DOM. Se comunican por un **bus de eventos tipado** (`src/core/events.ts`).
 
 ### Comandos
 ```bash
@@ -29,161 +29,142 @@ npm run build    # type-check + build de producción (dist/)
 ## 📁 Estructura de Archivos
 
 ```
-index.html                  Layout de 3 columnas + overlay de arena + modales
+index.html                  Layout 3 columnas + overlay de arena + modales
 public/assets/
-  sprites/frames/           0x72 DungeonTileset II v1.7 (CC0) — 370 frames animados
+  sprites/frames/           0x72 DungeonTileset II v1.7 (CC0) + cat_*.png (CC-BY dogchicken)
   kenney/                   Kenney Tiny Dungeon (CC0) — íconos 16x16
-  ATTRIBUTION.md            Créditos de assets
+  ATTRIBUTION.md            Créditos de assets (la atribución CC-BY es obligatoria)
 src/
-  main.ts                   Punto de entrada: UI + arranque (save o creación)
-  styles.css                Estilos completos (glassmorphism, rarezas, modales, responsive)
-  core/
-    types.ts                Todos los tipos compartidos
-    state.ts                Estado global tipado + creación de partida nueva
-    save.ts                 localStorage con versionado y migración
-    events.ts               Bus de eventos tipado (sistemas ↔ Phaser ↔ DOM)
-    ready.ts                Cola de arranque (espera a que Phaser cargue assets)
-  data/                     Contenido data-driven (agregar contenido = editar datos)
-    classes.ts              3 clases, atributos, stats base
-    skills.ts               12 habilidades con 3 rangos cada una
-    zones.ts                5 zonas con pools de enemigos, jefes y paletas
+  main.ts                   Punto de entrada: UI + música + arranque
+  styles.css                Tema pixel morado/rosado; fuente intercambiable (VT323/Quicksand)
+  core/                     types, state, save (migraciones), events (bus), ready
+  data/
+    classes.ts              3 gatas heroínas (Guerrera/Hechicera/Pícara) con tints de pelaje
+    skills.ts               12 habilidades con 3 rangos
+    zones.ts                5 zonas + enemigos felinos + jefes (final: Lince Hechicero)
     items.ts                Nombres, rarezas, sprites, efectos únicos, pociones
-    specialEvents.ts        7 eventos especiales con pesos y textos
-    story.ts                Prólogo + 4 capítulos + epílogo del Abismo (ampliada)
+    specialEvents.ts        13 eventos con narrativa profunda, pesos y elecciones
+    story.ts                Prólogo "La Séptima Vida" + 4 capítulos + epílogo (Felandia)
   systems/
     stats.ts                Stats derivadas con desglose (tooltips)
-    progression.ts          XP, niveles, puntos de atributo/habilidad
-    inventory.ts            Generación procedural de loot, equipar, vender
-    map.ts                  Generación de mapa (10-20 nodos), nivel de enemigos
-    combat.ts               Combate: click, DPS, crítico, esquiva, estados, recursos
-    gameflow.ts             Orquestación: nodos, eventos, jefes, capítulos, muerte
-    rng.ts                  Utilidades de azar
+    progression.ts          XP/niveles; mejoras de habilidad desde Nv. 13 (SKILL_UPGRADE_LEVEL)
+    inventory.ts            Loot procedural, equipar, vender
+    map.ts                  Mapa 10-20 nodos; nivel enemigo ≤ jugador+4
+    combat.ts               Combate; SIN regen pasiva; maná solo EN combate
+    gameflow.ts             Nodos, eventos (resolveEventChoice), jefes, capítulos, muerte
   scenes/
-    createGame.ts           Crea el juego Phaser (con watchdog de arranque)
-    BootScene.ts            Carga frames y construye animaciones
-    ArenaScene.ts           Arena: sprites, daño flotante, shake, transiciones
-    frameNames.ts           Manifiesto generado de los 370 frames
-  audio/sfx.ts              Sintetizador retro (17 efectos)
+    createGame.ts           Boot de Phaser (solo con #app visible) + watchdog
+    BootScene.ts            Carga frames y anims (attack/die one-shot, 16/10 fps)
+    ArenaScene.ts           Arena + FX por habilidad + anim de zarpazo al click
+    frameNames.ts           Manifiesto generado (398 frames)
+  audio/
+    sfx.ts                  17 efectos sintetizados
+    music.ts                Secuenciador chiptune: 7 pistas (zona/jefe/mercader)
   ui/
-    dom.ts                  Helpers DOM
-    hud.ts                  Header, panel izquierdo, barra de habilidades, log
-    inventoryUi.ts          Mochila 4x4 + detalle de ítem
-    arenaUi.ts              Botón avanzar, panel de eventos, tienda del mercader
-    modals.ts               Creación de personaje, historia, muerte, confirmaciones
+    hud.ts                  Header, panel izq., skillbar, toggles fuente/música/mute
+    inventoryUi.ts          Mochila 4x4 + detalle
+    arenaUi.ts              Avanzar, eventos data-driven con desenlaces, tienda
+    modals.ts               Creación (gatas), historia, muerte (7 vidas), confirmaciones
 ```
 
 ---
 
-## 🎮 Concepto del Juego
+## 🎮 Concepto
 
-**Hero Clicker RPG** es un clicker RPG roguelike de navegador. El jugador:
+Eres una **gata heroína** en el reino felino de **Felandia**, arrasado por el **Lince Hechicero** (un gato que pactó con el Abismo por vidas infinitas). Te queda **una sola de tus siete vidas**. Avanzas por un mapa procedural de 4 zonas + post-game, con combate clicker, eventos narrativos con decisiones, loot, niveles y jefes. Mentora: la abuela gata **Mau, Decana de los Tejados**.
 
-1. Crea un personaje (nombre + 1 de 3 clases, con sprite animado real).
-2. Lee un **prólogo narrativo** (historia de Eldoria y el Rey Hechicero).
-3. Avanza por un **mapa procedural** (10–20 nodos por zona) con el botón "Avanzar por el Sendero ➡️".
-4. En cada nodo: combate, élite, evento especial, descanso o jefe de zona.
-5. Sube de nivel, reparte atributos, mejora habilidades y equipa loot procedural.
-6. Al completar las 4 zonas de campaña se desbloquea el **Abismo Infinito** (post-game con ciclos de dificultad creciente).
+## 🗺️ Zonas
 
----
-
-## 🗺️ Zonas y Progresión
-
-| Zona | Niveles | Jefe | Sprite |
-|---|---|---|---|
-| 🌲 Bosque Susurrante | 1–10 | Orco Gigante, Señor de la Espesura | `ogre` |
-| 💎 Cueva de Cristal | 11–20 | Gólem de Piedra, Corazón de la Caverna | `big_zombie` (tint gris) |
-| 🌋 Volcán de Fuego Eterno | 21–30 | Demonio de Obsidiana, Hijo del Magma | `big_demon` |
-| 🏰 Castillo Flotante | 31–40 | Rey Hechicero, Amo del Castillo | `necromancer` (escala 6, tint púrpura) |
-| 🕳️ Abismo Infinito | 41+ | Avatar del Abismo (cada ciclo +10 niveles) | `big_demon` (tint violeta) |
-
-- Cada zona tiene paleta de colores propia (cielo degradado, siluetas, partículas ambientales) y pool de 5-6 enemigos animados.
-- **Nivel enemigo suavizado**: `min(nivel de zona, nivel del jugador + 4)` para evitar saltos imposibles.
-- Tipos de nodo: Enemy 55% · Elite 15% (2×HP, 1.5×ATK) · Rest 15% · Event 15% · Boss (último).
-
-### Eventos Especiales (7 tipos, con pesos)
-| Peso | Evento | Efecto |
+| Zona | Niveles | Jefe |
 |---|---|---|
-| 28 | 🏪 Mercader | Tienda: 3-4 equipos + pociones (10% de ítem de nivel superior) |
-| 18 | 👿 Mimic | Cofre animado: abrirlo = combate con botín garantizado; se puede rodear |
-| 14 | 🌿 Trampa | -15% HP + debuff (-20% Daño, -3 Def) hasta **vencer** el próximo combate |
-| 12 | 🗿 Altar | +40% de la XP del nivel actual |
-| 12 | ⛓️ Elección moral | Liberar espíritu (60% premio / 40% combate) o vender cadena (oro seguro) |
-| 10 | ⛲ Manantial | Cura 50% gratis |
-| 6 | ✨ Bendición | +15% Daño, +10% Crítico durante 3 combates |
+| 🌲 Bosque Susurrante | 1–10 | Orco Gigante |
+| 💎 Cueva de Cristal | 11–20 | Gólem de Piedra |
+| 🌋 Volcán de Fuego Eterno | 21–30 | Demonio de Obsidiana |
+| 🏰 Castillo Flotante | 31–40 | **Lince Hechicero** (gato, escala 4.6, tint púrpura) |
+| 🕳️ Abismo Infinito | 41+ | Avatar del Abismo (ciclos +10 niveles) |
 
----
+Cada zona suma un **enemigo felino** (sprite `cat` con tint): Gato Montés Embrujado, Lince de Cristal, Pantera de Magma, Gata Espectral, Felino del Vacío.
 
-## ⚔️ Combate
+- Nivel enemigo: `min(nivel de zona, jugador + 4)`.
+- Nodos: Enemy 55% · Elite 15% · Rest 15% · Event 15% · Boss (último).
 
-- **Click / Espacio**: daño activo (toda la arena es clickeable, con pulso visual).
-- **DPS automático** por segundo (con acumulación fraccional).
-- **Barra de carga enemiga**: al llenarse ataca (mitigado por Defensa; mínimo 1).
-- **Críticos** por clase + atributos; **esquiva** (Pícaro 5% base + habilidades).
-- **Estados**: Quemadura 🔥, Veneno 🐍, Aturdimiento 💫 (en enemigo); Inmune/Escudo/Esquiva+ (en jugador).
-- **Regen fuera de combate**: 2% HP máx/seg.
-- **Muerte**: modal de Game Over → revivir al 50% HP (-20% oro) o reiniciar. Tras revivir, el jugador decide cuándo reintentar el nodo (puede equiparse antes).
-- **Efectos visuales**: números de daño flotantes (color por fuente/crítico), shake de cámara, flash de impacto, partículas de muerte, entrada animada de enemigos, transición de fundido entre zonas.
+## 🎭 Eventos (13 tipos, narrativa profunda con desenlaces)
 
-## 🏆 Clases (recursos y habilidades idénticas al diseño v1, con rangos 1-3)
+Cada evento tiene historia contextualizada, elecciones y **texto de desenlace** (panel → elección → narración del resultado → continuar). Definidos en `specialEvents.ts` (copy + choices) y resueltos en `gameflow.resolveEventChoice()`.
 
-- 🛡️ **Guerrero** (`knight_m`) — Ira (al recibir daño): Golpe de Escudo, Grito de Batalla, Indomable, Último Bastión.
-- 🔮 **Mago** (`wizzard_m`) — Maná (regen pasiva; +5 máx por punto de Agilidad): Bola de Fuego, Barrera de Hielo, Distorsión Temporal (acelera cooldowns ×2), Tormenta de Meteoros.
-- 🗡️ **Pícaro** (`elf_m`) — Combo (por click, 0-5): Hojas Venenosas (escala con combo), Esquiva Sombría, Adrenalina, Danza de Hojas.
+| Evento | Decisión / desenlaces |
+|---|---|
+| 🏪 El Último Mercader | Tienda (3-4 equipos + pociones) |
+| 📦 Cofre Solitario | Abrir (¡mimic!) / rodear |
+| 🪤 Trampa de Cazadores | Con cuidado (-10% HP + debuff) / forzar (-25% HP sin debuff) |
+| 🗿 Altar de la Gran Gata | Rezar (+XP) / ofrendar oro (+XP doble) |
+| ⛓️ Espíritu Encadenado | Liberar (60% premio / 40% combate) / vender cadena |
+| ⛲ Manantial de Leche de Luna | Beber (+50% HP) / remojarse (+25% + regen 45s) |
+| ✨ Bendición del Tejado | +15% Daño, +10% Crít por 3 combates |
+| 🐈‍⬛ La Gata Errante | Compartir oro (70% bendición / 30% ítem) / negarse (20% mal de ojo) |
+| 🕯️ Santuario Olvidado | Sangre -25% HP (50% ítem épico / nada) / rezar (+15% HP) |
+| 🐱 El Gatito Perdido | Alimentarlo (XP + buff; sin oro da XP menor) / ignorarlo |
+| ⚠️ ¡Emboscada! | Pelear (élite, -2 Def, botín garantizado) / huir (-10% oro) |
+| 😼 El Rival (Bigotes de Hierro) | Duelo (élite gato, botín épico garantizado) / declinar |
+| 🌙 La Bruja del Páramo | Pagar (+6% crít) / negarse (-15% Daño hasta vencer; sin oro: maldición igual) |
 
-Las habilidades se aprenden solas al nivel requerido (3/5/8/12) y se mejoran con Puntos de Habilidad (1 por nivel, igual que atributos).
+## ⚔️ Combate y reglas clave
 
-## 🎒 Ítems
+- Click/Espacio ataca (la gata hace **animación de zarpazo**); DPS automático; barra de carga enemiga; críticos/esquiva/estados.
+- **SIN regeneración pasiva fuera de combate** — curarse depende de fogatas, manantiales, pociones y habilidades.
+- **El maná solo regenera EN combate** (la Ira decae fuera de combate).
+- **Mejoras de habilidad desde Nv. 13**: las habilidades se aprenden a Nv. 3/5/8/12 (rango 1); los puntos de mejora se ganan 1/nivel **a partir del 13** (UI muestra el candado antes). Migración de saves incluida.
+- Muerte: modal felino (séptima vida) → revivir al 50% (-20% oro) y reintentar cuando quieras, o reiniciar.
 
-- Mochila 16 ranuras, 3 slots de equipo, 4 rarezas con bordes/glow CSS.
-- **Armas**: 27 sprites del tileset, repartidos por rareza. Armadura/accesorio: íconos Kenney.
-- **Efectos únicos** (épico 35% / legendario 100%): Sed de Sangre (robo de vida), Perforante, Codicia (+oro), Sabiduría (+XP), Espinas (refleja daño), Verdugo (+daño a enemigos <25% HP).
-- Loot: 25% normal / 60% élite / 100% jefe y mimic (con bonus de rareza).
+## 🏆 Clases (gatas)
 
-## 📖 Historia
+- 🛡️ **Guerrera** (pelaje naranja) — Ira al recibir daño.
+- 🔮 **Hechicera** (pelaje lila) — Maná (regen en combate; +5 máx por Agilidad).
+- 🗡️ **Pícara** (pelaje gris) — Combo por click.
 
-Narrativa ampliada con arco completo: prólogo, 4 capítulos (uno por jefe, con la trama de los 4 sellos del Rey Hechicero), epílogo del Abismo e intros de zona. Releíble desde el botón 📖 del header (solo capítulos desbloqueados). Los textos interpolan `{name}` y `{class}`.
+Habilidades y FX propios por habilidad en `ArenaScene.skillFx()`: proyectil de Bola de Fuego con estela, lluvia de 7 meteoros, burbuja de Barrera de Hielo, anillos de Grito de Batalla, afterimages de Esquiva Sombría, líneas de velocidad de Adrenalina, remolino + cortes de Danza de Hojas, cúpula dorada de Último Bastión, etc.
+
+## 🎨 HUD (tema "Crónicas de Felandia")
+
+- Paleta **morado/rosado** femenina con estilo pixel (bordes 2px, sombras chunky, glow rosa). Colores de rareza intactos.
+- **Fuente intercambiable** (botón `Aa`): pixel (VT323) ↔ suave (Quicksand), persistida en el save (`meta.fontMode`). Tamaños por modo vía variables CSS (`--t-sm/md/lg`).
+- **Barra de vida de la heroína grande y notoria** (26px + ❤️) en la arena, además de los dígitos del panel.
+- **Progreso de escenario centrado y más grande** en el header (nodos 18px, jefe 24px 👑).
+- Botones: Aa (fuente), 📖 (releer historia), 🎵 (música), 🔊 (todo el audio), 🔄 (reset con confirmación).
+
+## 🎵 Música (Web Audio, sin archivos)
+
+`src/audio/music.ts`: secuenciador por corcheas (lead cuadrada + bajo triangular + hats de ruido). **7 pistas**: bosque, cueva, volcán, castillo, abismo, **jefe** (se activa al aparecer un boss y vuelve al tema de zona al vencerlo) y **mercader**. Se silencia al morir. Toggle 🎵 independiente (`meta.musicOn`); el audio se desbloquea con el primer click (política de navegadores).
 
 ## 💾 Guardado
 
-- localStorage automático en cada acción relevante (clave `hero-clicker-rpg-save`).
-- `SAVE_VERSION` con migración de versiones anteriores.
-- Reinicio con **modal de confirmación** (ya no borra por accidente).
+localStorage con `SAVE_VERSION` y migraciones (incluye recorte de skillPoints pre-Nv13 y defaults de musicOn/fontMode).
 
 ---
 
-## ✅ Estado actual (qué se hizo en la v2)
+## ✅ Historial
 
-Bugs v1 resueltos:
-- [x] Debuff de trampa: se aplica al próximo combate y se limpia al vencerlo (y al morir).
-- [x] Estilos del mercader: tienda nueva (`.merchant-item`) integrada al panel de eventos.
-- [x] `explore-view` eliminada: el flujo es 100% inline en la arena.
+### v2.1 — Crónicas de Felandia (esta versión)
+- [x] Re-tematización total a gatos: heroínas, historia (7 vidas, Lince Hechicero, Mau), enemigos felinos, eventos.
+- [x] Sprites de gata con animaciones idle/run/**attack**/die (Cat Fighter, CC-BY dogchicken; extraídos de GIF, fondo transparente).
+- [x] Sin regen pasiva fuera de combate · maná solo en combate · mejoras de habilidad desde Nv. 13.
+- [x] HUD pixel morado/rosado + fuente elegible persistida + barra de HP grande + progreso centrado/grande.
+- [x] Música chiptune dinámica (zona/jefe/mercader/muerte).
+- [x] 13 eventos con narrativa profunda, decisiones morales, desenlaces múltiples y variantes de combate (emboscada, rival, espíritu, mimic).
+- [x] FX visuales propios por cada una de las 12 habilidades + zarpazo al click.
 
-Mejoras implementadas:
-- [x] Pantalla de muerte con revivir/reiniciar.
-- [x] 4 eventos nuevos (altar, elección moral, manantial, bendición).
-- [x] Barra de progreso del mapa en el header (nodos + jefe).
-- [x] Transiciones de nodo/zona animadas (run del héroe, fundidos, flash).
-- [x] Regen de HP fuera de combate.
-- [x] Ítems con efectos únicos.
-- [x] 5ª zona / modo infinito (Abismo).
-- [x] Tooltips con desglose de stats (base/clase/atributos/equipo/efectos).
-- [x] Confirmación de reset.
-- [x] Historia releíble + volumen narrativo ampliado.
-- [x] Responsive: breakpoint <980px apila los paneles.
-- [x] Arquitectura modular (24 módulos TS) + contenido data-driven.
+### v2.0 — Reconstrucción Phaser
+- [x] Migración completa de vanilla JS a Phaser 3 + TS + Vite; bugs v1 resueltos; game over; Abismo; tooltips; etc.
 
-Notas técnicas importantes:
-- **Phaser se crea recién cuando `#app` es visible** (`createGame.ts`): si el contenedor mide 0×0, el renderer WebGL arranca corrupto. No mover ese orden.
-- `?st` en la URL fuerza el bucle por `setTimeout` (útil con ventanas en segundo plano / throttling de RAF).
-- `frameNames.ts` es generado desde `public/assets/sprites/frames` — regenerarlo si se agregan sprites.
-- Convención de animaciones 0x72: héroes/enemigos grandes tienen `X_idle_anim`/`X_run_anim`/`X_hit_anim`; criaturas simples solo `X_anim`; cofres `chest_*_open_anim` (3 frames). `ArenaScene.animKeyFor()` resuelve automáticamente.
+## 📌 Notas técnicas para agentes
 
-## 🔜 Ideas futuras (pendientes)
+- **Phaser se crea solo cuando `#app` es visible** (`createGame.ts`) — con contenedor 0×0 el renderer WebGL queda corrupto. No cambiar ese orden.
+- `?st` en la URL fuerza bucle por `setTimeout` (ventanas en segundo plano).
+- `frameNames.ts` se regenera desde `public/assets/sprites/frames` (PowerShell en el historial del repo).
+- Convención de anims: `X_idle_anim`/`X_run_anim` (loop), `X_attack_anim` (16fps, one-shot), `X_die_anim` (10fps, one-shot), `X_anim` (criaturas simples). `ArenaScene.animKeyFor()` resuelve.
+- Las 3 clases comparten el sprite `cat` con `ClassDef.tint`; las tarjetas de creación usan filtros CSS (`CLASS_FUR_FILTER`).
+- Eventos: agregar uno = copy+choices en `specialEvents.ts` + casos en `gameflow.resolveEventChoice()` (+ pieza opcional en `ArenaScene.showEventPiece`).
 
-- [ ] Sets de ítems con sinergias.
-- [ ] Internacionalización (strings centralizados).
-- [ ] Atlas de texturas (empaquetar los 370 PNG en uno) para acelerar la carga.
-- [ ] Logros / estadísticas de partida.
-- [ ] Más jefes únicos para los ciclos del Abismo.
-- [ ] Modo táctil/mobile pulido (botón de ataque dedicado).
+## 🔜 Ideas futuras
+
+- [ ] Sets de ítems con sinergias · logros · i18n · atlas de texturas · más jefes del Abismo · modo táctil pulido.

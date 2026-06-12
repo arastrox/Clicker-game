@@ -1,6 +1,11 @@
 # Créditos de Assets
 
-Todos los assets gráficos de este proyecto son de dominio público (CC0).
+## sprites/frames/cat_*.png — Cat Fighter
+- Autor: **dogchicken** — https://opengameart.org/content/cat-fighter-sprite-sheet
+- Licencia: **CC-BY 3.0** (requiere esta atribución)
+- Sprites de la heroína felina (idle, correr, ataque, derrota), extraídos de los GIF originales con fondo transparente.
+
+El resto de los assets gráficos son de dominio público (CC0).
 
 ## sprites/frames/ — 0x72 DungeonTileset II v1.7
 - Autor: **0x72** — https://0x72.itch.io/dungeontileset-ii

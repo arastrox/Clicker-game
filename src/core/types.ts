@@ -5,7 +5,9 @@ export type AttrId = 'fuerza' | 'constitucion' | 'destreza' | 'reflejos' | 'agil
 export type Rarity = 'comun' | 'raro' | 'epico' | 'legendario';
 export type ItemSlot = 'weapon' | 'armor' | 'accessory';
 export type NodeType = 'enemy' | 'elite' | 'rest' | 'event' | 'boss';
-export type EventType = 'merchant' | 'mimic' | 'trap' | 'altar' | 'moral' | 'spring' | 'blessing';
+export type EventType =
+  | 'merchant' | 'mimic' | 'trap' | 'altar' | 'moral' | 'spring' | 'blessing'
+  | 'stranger' | 'shrine' | 'kitten' | 'ambush' | 'rival' | 'curse';
 export type StatusId = 'burn' | 'poison' | 'stun' | 'immune' | 'shield' | 'dodge_up' | 'adrenaline' | 'battlecry' | 'time_warp' | 'last_bastion';
 
 export interface UniqueEffect {
@@ -58,7 +60,9 @@ export interface ClassDef {
   name: string;
   emoji: string;
   desc: string;
-  spriteKey: string;     // prefijo de anims: knight_m, wizzard_m, elf_m
+  spriteKey: string;     // prefijo de anims (p. ej. 'cat' → cat_idle_anim)
+  tint?: number;         // tinte del sprite (variantes de pelaje)
+  heroScale: number;     // escala del sprite en la arena
   resource: { name: string; emoji: string; max: number; color: string };
   baseMods: { maxHp: number; clickDmg: number; defense: number; dps: number };
   critBase: number;      // % base
@@ -135,6 +139,8 @@ export interface RunState {
 
 export interface MetaState {
   muted: boolean;
+  musicOn: boolean;
+  fontMode: 'pixel' | 'soft';
   seenPrologue: boolean;
   unlockedChapters: number[];
   campaignDone: boolean;
@@ -160,6 +166,8 @@ export interface CombatEnemy {
   isBoss: boolean;
   isElite: boolean;
   isMimic: boolean;
+  guaranteedLoot?: boolean;
+  lootBonus?: number;
   statuses: StatusEffect[];
   goldReward: number;
   xpReward: number;

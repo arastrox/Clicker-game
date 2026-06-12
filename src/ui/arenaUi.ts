@@ -4,8 +4,7 @@ import { bus } from '@/core/events';
 import { getState } from '@/core/state';
 import {
   advance, restHeal, skipRest,
-  eventOpenChest, eventIgnoreChest, eventTrapResolve, eventAltarResolve,
-  eventSpringResolve, eventBlessingResolve, eventFreeSpirit, eventSellChain,
+  resolveEventChoice, finishEventNode,
   getMerchantStock, merchantItemPrice, buyMerchantItem, buyPotion, leaveMerchant,
 } from '@/systems/gameflow';
 import { EVENT_COPY } from '@/data/specialEvents';
@@ -48,12 +47,14 @@ function hideEventPanel(): void {
 // ─── Descanso ────────────────────────────────────────────────────────────────
 
 function showRest(): void {
-  openPanel('⛺', 'Fogata del Viajero', 'Las llamas crepitan con calidez. Es un buen momento para vendar heridas y recuperar el aliento antes de seguir.');
-  addChoice('🔥 Descansar (+30% Vida)', () => {
+  openPanel('⛺', 'Fogata del Sendero',
+    'Alguien dejó esta fogata encendida para los que vienen detrás — una vieja costumbre de los caminos de Felandia. Las llamas crepitan con calidez y hay espacio justo para una gata cansada. Es buen momento para lamerse las heridas y vigilar las sombras con un solo ojo.');
+  addChoice('🔥 Descansar junto al fuego (+30% Vida)', () => {
     sfx.heal();
-    closeAndRun(restHeal);
+    hideEventPanel();
+    restHeal();
   });
-  addChoice('🚶 Seguir sin descansar', () => closeAndRun(skipRest), true);
+  addChoice('🚶 Seguir sin descansar', () => { hideEventPanel(); skipRest(); }, true);
 }
 
 // ─── Eventos especiales ──────────────────────────────────────────────────────
@@ -62,32 +63,31 @@ function showEvent(type: EventType): void {
   const copy = EVENT_COPY[type];
   openPanel(copy.emoji, copy.title, copy.text);
 
-  switch (type) {
-    case 'mimic':
-      addChoice('📦 Abrir el cofre', () => closeAndRun(eventOpenChest), false, true);
-      addChoice('🚶 Rodearlo con cuidado', () => closeAndRun(eventIgnoreChest), true);
-      break;
-    case 'trap':
-      addChoice('🌿 Liberarte de la trampa', () => closeAndRun(eventTrapResolve));
-      break;
-    case 'altar':
-      addChoice('🗿 Rezar ante el altar (+XP)', () => closeAndRun(eventAltarResolve));
-      break;
-    case 'spring':
-      addChoice('⛲ Beber del manantial (+50% Vida)', () => { sfx.heal(); closeAndRun(eventSpringResolve); });
-      break;
-    case 'blessing':
-      addChoice('✨ Aceptar la bendición', () => closeAndRun(eventBlessingResolve));
-      break;
-    case 'moral':
-      addChoice('⛓️ Liberar al espíritu (riesgo)', () => closeAndRun(eventFreeSpirit), false, true);
-      addChoice('🪙 Vender la cadena (seguro)', () => closeAndRun(eventSellChain));
-      break;
-    case 'merchant':
-      renderMerchant();
-      addChoice('👋 Despedirse del mercader', () => closeAndRun(leaveMerchant), true);
-      break;
+  if (type === 'merchant') {
+    renderMerchant();
+    addChoice('👋 Despedirse del mercader', () => { hideEventPanel(); leaveMerchant(); }, true);
+    return;
   }
+
+  for (const choice of copy.choices) {
+    addChoice(choice.label, () => {
+      const outcome = resolveEventChoice(type, choice.id);
+      if (outcome.kind === 'combat') {
+        hideEventPanel();
+      } else {
+        showOutcome(copy.emoji, copy.title, outcome.text);
+      }
+    }, choice.ghost, choice.danger);
+  }
+}
+
+// Desenlace narrativo del evento + botón para continuar
+function showOutcome(emoji: string, title: string, outcomeText: string): void {
+  openPanel(emoji, title, outcomeText);
+  addChoice('🐾 Continuar el camino', () => {
+    hideEventPanel();
+    finishEventNode();
+  });
 }
 
 function openPanel(emoji: string, title: string, text: string): void {
@@ -104,11 +104,6 @@ function addChoice(label: string, fn: () => void, ghost = false, danger = false)
   const btn = el('button', `choice-btn${danger ? ' danger' : ''}${ghost ? ' ghost' : ''}`, label);
   btn.addEventListener('click', fn);
   $('event-choices').appendChild(btn);
-}
-
-function closeAndRun(fn: () => void): void {
-  hideEventPanel();
-  fn();
 }
 
 // ─── Mercader ────────────────────────────────────────────────────────────────

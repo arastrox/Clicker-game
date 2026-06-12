@@ -11,9 +11,10 @@ import {
   breakdownClickDmg, breakdownDefense, breakdownDps, breakdownMaxHp,
   getCritChance, getMaxHp, xpToNext, type StatBreakdown,
 } from '@/systems/stats';
-import { spendAttrPoint, upgradeSkill } from '@/systems/progression';
+import { spendAttrPoint, upgradeSkill, SKILL_UPGRADE_LEVEL } from '@/systems/progression';
 import { castSkill, getCombatRuntime, getCooldown, getResourceMax } from '@/systems/combat';
 import { setUiTick } from '@/scenes/ArenaScene';
+import { toggleMusic } from '@/audio/music';
 import { $, el, iconSrc, itemStatsText, fmt } from './dom';
 import { RARITY_INFO } from '@/data/items';
 
@@ -24,7 +25,23 @@ const STATUS_EMOJI: Record<string, string> = {
 
 export function initHud(): void {
   bus.on('state:changed', renderAll);
-  bus.on('game:started', () => { renderAll(); });
+  bus.on('game:started', () => { applyFontMode(); renderAll(); });
+
+  // alternar fuente pixel / suave (persistida en el save si existe)
+  $('btn-font').addEventListener('click', () => {
+    if (hasState()) {
+      const meta = getState().meta;
+      meta.fontMode = meta.fontMode === 'soft' ? 'pixel' : 'soft';
+      saveGame();
+      applyFontMode();
+    } else {
+      document.body.classList.toggle('font-soft');
+    }
+  });
+
+  $('btn-music').addEventListener('click', () => {
+    if (hasState()) toggleMusic();
+  });
   bus.on('zone:enter', ({ zoneIndex }) => {
     renderAll();
     if (hasState()) {
@@ -112,6 +129,13 @@ function renderHeader(): void {
   $('xp-text').textContent = `${fmt(s.player.xp)} / ${fmt(need)} XP`;
 
   $('btn-mute').textContent = s.meta.muted ? '🔇' : '🔊';
+  $('btn-music').classList.toggle('off', s.meta.musicOn === false);
+  $('btn-font').classList.toggle('off', s.meta.fontMode === 'soft');
+}
+
+function applyFontMode(): void {
+  if (!hasState()) return;
+  document.body.classList.toggle('font-soft', getState().meta.fontMode === 'soft');
 }
 
 function tipHtml(label: string, b: StatBreakdown): string {
@@ -201,8 +225,11 @@ function renderAttributes(): void {
 function renderSkillUpgrades(): void {
   const s = getState();
   const pane = $('pane-skills');
+  const canUpgrade = s.player.level >= SKILL_UPGRADE_LEVEL;
   pane.innerHTML = '';
-  if (s.player.skillPoints > 0) {
+  if (!canUpgrade) {
+    pane.appendChild(el('div', 'gate-banner', `🔒 Las mejoras de rango se desbloquean en Nv. ${SKILL_UPGRADE_LEVEL}`));
+  } else if (s.player.skillPoints > 0) {
     pane.appendChild(el('div', 'points-banner', `🌟 ${s.player.skillPoints} punto(s) de habilidad disponible(s)`));
   }
   for (const skill of skillsForClass(s.player.classId)) {
@@ -215,7 +242,7 @@ function renderSkillUpgrades(): void {
       <span>${skill.emoji}</span>
       <span class="sk-name">${skill.name}</span>
       <span class="sk-rank">${rankText}</span>`;
-    if (!locked && rank < MAX_SKILL_RANK) {
+    if (canUpgrade && !locked && rank < MAX_SKILL_RANK) {
       const btn = el('button', 'plus-btn', '+') as HTMLButtonElement;
       btn.disabled = s.player.skillPoints <= 0;
       btn.title = `Mejorar a rango ${rank + 1}: ${skill.ranks[rank].desc}`;
@@ -225,7 +252,7 @@ function renderSkillUpgrades(): void {
     row.appendChild(el('div', 'sk-desc', desc));
     pane.appendChild(row);
   }
-  $('skill-dot').classList.toggle('hidden', s.player.skillPoints <= 0);
+  $('skill-dot').classList.toggle('hidden', !canUpgrade || s.player.skillPoints <= 0);
 }
 
 function renderSkillBar(): void {

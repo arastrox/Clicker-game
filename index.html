@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hero Clicker RPG</title>
+  <title>Hero Clicker RPG — Crónicas de Felandia</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>" />
 </head>
 <body>
   <div id="app" class="hidden">
     <header id="topbar">
-      <div id="logo">⚔️ <span>Hero Clicker <em>RPG</em></span></div>
-      <div id="zone-box">
-        <div id="zone-name">—</div>
+      <div id="logo">🐱 <span>Hero Clicker <em>RPG</em></span></div>
+      <div id="zone-name">—</div>
+      <div id="progress-box">
         <div id="map-progress" title="Progreso de la zona"></div>
       </div>
       <div id="xp-box">
@@ -22,8 +22,10 @@
         <div class="bar xp-bar"><div id="xp-fill" class="fill"></div><span id="xp-text"></span></div>
       </div>
       <div id="top-controls">
+        <button id="btn-font" class="icon-btn" title="Cambiar fuente (pixel / suave)">Aa</button>
         <button id="btn-story" class="icon-btn" title="Releer la historia">📖</button>
-        <button id="btn-mute" class="icon-btn" title="Silenciar">🔊</button>
+        <button id="btn-music" class="icon-btn" title="Música">🎵</button>
+        <button id="btn-mute" class="icon-btn" title="Silenciar todo">🔊</button>
         <button id="btn-reset" class="icon-btn" title="Reiniciar partida">🔄</button>
       </div>
     </header>
@@ -64,7 +66,10 @@
           <div id="arena-overlay">
             <div id="player-plate">
               <span id="player-plate-name"></span>
-              <div class="bar hp-bar"><div id="player-hp-fill" class="fill"></div><span id="player-hp-text"></span></div>
+              <div id="player-hp-row">
+                <span id="player-hp-heart">❤️</span>
+                <div class="bar hp-bar big"><div id="player-hp-fill" class="fill"></div><span id="player-hp-text"></span></div>
+              </div>
             </div>
             <div id="enemy-plate" class="hidden">
               <div id="enemy-name"></div>

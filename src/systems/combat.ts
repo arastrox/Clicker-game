@@ -77,10 +77,19 @@ function addEnemyStatus(id: StatusId, duration: number, value = 0): void {
 
 // ─── Aparición de enemigos ──────────────────────────────────────────────────
 
-export function spawnEnemyForNode(node: MapNode, def: EnemyDef, opts: { boss?: boolean; mimic?: boolean; nameOverride?: string } = {}): void {
+export interface SpawnOpts {
+  boss?: boolean;
+  elite?: boolean;
+  mimic?: boolean;
+  nameOverride?: string;
+  lootBonus?: number;
+  guaranteedLoot?: boolean;
+}
+
+export function spawnEnemyForNode(node: MapNode, def: EnemyDef, opts: SpawnOpts = {}): void {
   const s = getState();
   const lvl = enemyLevelFor(s.run.nodeIndex);
-  const isElite = node.type === 'elite';
+  const isElite = opts.elite ?? node.type === 'elite';
   const isBoss = opts.boss ?? node.type === 'boss';
   const isMimic = opts.mimic ?? false;
 
@@ -106,6 +115,8 @@ export function spawnEnemyForNode(node: MapNode, def: EnemyDef, opts: { boss?: b
     isBoss,
     isElite,
     isMimic,
+    guaranteedLoot: opts.guaranteedLoot,
+    lootBonus: opts.lootBonus,
     statuses: [],
     goldReward: gold,
     xpReward: xp,
@@ -365,8 +376,8 @@ function onEnemyDefeated(): void {
   log(`⚔️ ${enemy.name} derrotado. +${enemy.goldReward} 🪙, +${enemy.xpReward} XP`, 'combat');
 
   let loot: Item | null = null;
-  if (lootRoll(rt.node, enemy.isMimic)) {
-    const bonus = enemy.isBoss ? 18 : enemy.isElite ? 8 : enemy.isMimic ? 12 : 0;
+  if (lootRoll(rt.node, enemy.isMimic || enemy.guaranteedLoot === true)) {
+    const bonus = enemy.lootBonus ?? (enemy.isBoss ? 18 : enemy.isElite ? 8 : enemy.isMimic ? 12 : 0);
     loot = generateItem(enemy.level, { rarityBonus: bonus });
     if (addToInventory(loot)) {
       log(`${RARITY_INFO[loot.rarity].emoji} Botín: ${loot.name} [${RARITY_INFO[loot.rarity].name}]`, 'loot');
@@ -421,10 +432,12 @@ export function combatUpdate(dt: number): void {
     return rb.remaining > 0;
   });
 
-  // recursos pasivos
-  if (s.player.classId === 'mage') {
+  // recursos pasivos: el maná solo se regenera EN combate (decisión de diseño:
+  // esperar fuera de combate no debe dar ventaja)
+  const inCombat = rt.enemy !== null && rt.enemy.hp > 0;
+  if (s.player.classId === 'mage' && inCombat) {
     rt.resource = Math.min(getResourceMax(), rt.resource + 4 * dt);
-  } else if (s.player.classId === 'warrior' && !rt.enemy) {
+  } else if (s.player.classId === 'warrior' && !inCombat) {
     rt.resource = Math.max(0, rt.resource - 3 * dt);
   }
 
@@ -482,15 +495,14 @@ export function combatUpdate(dt: number): void {
         enemyAttacks();
       }
     }
-  } else if (!rt.enemy) {
-    // regeneración pasiva fuera de combate: 2% de la vida máxima por segundo
-    const max = getMaxHp();
-    if (s.player.hp > 0 && s.player.hp < max) {
-      const before = Math.floor(s.player.hp);
-      s.player.hp = Math.min(max, s.player.hp + max * 0.02 * dt);
-      if (Math.floor(s.player.hp) !== before) bus.emit('state:changed');
-    }
   }
+  // Sin regeneración pasiva fuera de combate: curarse depende de descansos,
+  // manantiales, pociones y habilidades (decisión de diseño).
+}
+
+// Regeneración temporal (pociones, manantial): rate HP/s durante `duration` s
+export function addRegenBuff(rate: number, duration: number): void {
+  rt.regenBuffs.push({ rate, remaining: duration });
 }
 
 // ─── Utilidades para flujo de juego ────────────────────────────────────────

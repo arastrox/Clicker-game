@@ -44,7 +44,11 @@ function migrate(data: GameState): GameState {
   data.run ??= { zoneIndex: 0, nodeIndex: -1, map: [], trapDebuffActive: false, buffs: [], endlessTier: 0 };
   data.run.buffs ??= [];
   data.run.endlessTier ??= 0;
-  data.meta ??= { muted: false, seenPrologue: true, unlockedChapters: [], campaignDone: false };
+  data.meta ??= { muted: false, musicOn: true, fontMode: 'pixel', seenPrologue: true, unlockedChapters: [], campaignDone: false };
   data.meta.unlockedChapters ??= [];
+  data.meta.musicOn ??= true;
+  data.meta.fontMode ??= 'pixel';
+  // las mejoras de habilidad ahora se ganan desde el nivel 13
+  data.player.skillPoints = Math.max(0, Math.min(data.player.skillPoints, data.player.level - 12));
   return data;
 }

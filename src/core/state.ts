@@ -34,6 +34,8 @@ export function createNewState(name: string, classId: ClassId): GameState {
     },
     meta: {
       muted: false,
+      musicOn: true,
+      fontMode: 'pixel',
       seenPrologue: false,
       unlockedChapters: [],
       campaignDone: false,
