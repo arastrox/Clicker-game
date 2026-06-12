@@ -63,6 +63,7 @@ export interface ClassDef {
   spriteKey: string;     // prefijo de anims (p. ej. 'cat' → cat_idle_anim)
   tint?: number;         // tinte del sprite (variantes de pelaje)
   heroScale: number;     // escala del sprite en la arena
+  faceLeft?: boolean;    // el sprite original mira a la izquierda (se voltea)
   resource: { name: string; emoji: string; max: number; color: string };
   baseMods: { maxHp: number; clickDmg: number; defense: number; dps: number };
   critBase: number;      // % base

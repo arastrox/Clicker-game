@@ -40,12 +40,15 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
-    // textura de 1 píxel para partículas
-    const g = this.make.graphics({ x: 0, y: 0 }, false);
-    g.fillStyle(0xffffff, 1);
-    g.fillRect(0, 0, 4, 4);
-    g.generateTexture('px', 4, 4);
-    g.destroy();
+    // textura de 1 píxel para partículas (canvas 2D: generateTexture usa el
+    // renderer WebGL y falla si aún no se renderizó ningún frame)
+    const pxCanvas = document.createElement('canvas');
+    pxCanvas.width = 4;
+    pxCanvas.height = 4;
+    const pctx = pxCanvas.getContext('2d')!;
+    pctx.fillStyle = '#ffffff';
+    pctx.fillRect(0, 0, 4, 4);
+    this.textures.addCanvas('px', pxCanvas);
 
     this.scene.start('Arena');
   }

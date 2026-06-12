@@ -10,6 +10,10 @@ import { whenArenaReady } from './core/ready';
 import { bootArena } from './scenes/createGame';
 import { $ } from './ui/dom';
 
+// los errores no capturados se reflejan en consola (diagnóstico)
+window.addEventListener('error', (e) => console.error('[uncaught]', e.message, e.filename?.split('/').pop(), e.lineno));
+window.addEventListener('unhandledrejection', (e) => console.error('[promise]', (e.reason as Error)?.message ?? e.reason));
+
 // ─── UI DOM ─────────────────────────────────────────────────────────────────
 
 initHud();

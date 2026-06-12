@@ -144,7 +144,17 @@ localStorage con `SAVE_VERSION` y migraciones (incluye recorte de skillPoints pr
 
 ## ✅ Historial
 
-### v2.1 — Crónicas de Felandia (esta versión)
+### v2.2 — Escenarios con profundidad y modelos por clase (esta versión)
+- [x] **Escenarios remodelados**: cielo con elementos celestes por zona (luna, estrellas, resplandor de lava, brillos de cristal), siluetas lejanas en dos planos, props medios (columnas/estandartes), piso completamente embaldosado con sombreado de perspectiva, decoración a nivel de suelo y viñeta frontal.
+- [x] **Sensación de avance**: al avanzar de nodo, todo el mundo se desplaza con parallax (fondo lento, props medios, suelo rápido con scroll envolvente y decoración reciclada).
+- [x] **Profundidad de combate**: la heroína está más cerca (abajo, escala completa) y el enemigo más lejos (arriba, 93% de escala, sombra suave); el suelo se oscurece hacia el fondo.
+- [x] **Fix del personaje flotando**: los frames del gato bípedo tenían 9 filas transparentes bajo las patas (recortadas); todas las posiciones se anclan a la banda de suelo.
+- [x] **Modelos por clase**: Guerrera = gata luchadora bípeda; Pícara = gata callejera cuadrúpeda (CC0); Hechicera = la cuadrúpeda con sombrero de bruja compuesto por frame (anclado a la cabeza). Embestida como ataque para las cuadrúpedas.
+- [x] **Fix tooltip de stats**: ahora usa posición fija con z-index alto — ya no queda oculto bajo la arena.
+- [x] **Balance**: enemigos +40% vida y ataques 30% más rápidos (intervalos 2.3/2.0/1.85s).
+- [x] **Robustez de arranque**: boot diferido hasta que el contenedor tenga tamaño real (ventanas minimizadas), watchdog de texturas, fallback a renderer Canvas, texturas utilitarias por canvas 2D (sin depender del primer frame WebGL) y hook global de errores.
+
+### v2.1 — Crónicas de Felandia
 - [x] Re-tematización total a gatos: heroínas, historia (7 vidas, Lince Hechicero, Mau), enemigos felinos, eventos.
 - [x] Sprites de gata con animaciones idle/run/**attack**/die (Cat Fighter, CC-BY dogchicken; extraídos de GIF, fondo transparente).
 - [x] Sin regen pasiva fuera de combate · maná solo en combate · mejoras de habilidad desde Nv. 13.

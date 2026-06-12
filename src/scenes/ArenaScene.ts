@@ -14,7 +14,12 @@ export class ArenaScene extends Phaser.Scene {
   private enemy: Phaser.GameObjects.Sprite | null = null;
   private enemyShadow: Phaser.GameObjects.Ellipse | null = null;
   private heroShadow: Phaser.GameObjects.Ellipse | null = null;
-  private bgLayer: Phaser.GameObjects.Container | null = null;
+  private bgLayer: Phaser.GameObjects.Container | null = null;   // cielo + lejano
+  private midLayer: Phaser.GameObjects.Container | null = null;  // props medios
+  private decorLayer: Phaser.GameObjects.Container | null = null; // props a nivel de suelo
+  private floorLayer: Phaser.GameObjects.Container | null = null; // baldosas (scroll envolvente)
+  private fgLayer: Phaser.GameObjects.Container | null = null;   // viñeta frontal
+  private decorProps: Phaser.GameObjects.Image[] = [];
   private setPiece: Phaser.GameObjects.Container | null = null; // fuente, cofre, etc.
   private ambient: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private currentZoneIndex = -1;
@@ -27,6 +32,15 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   create(): void {
+    try {
+      this.createInner();
+    } catch (err) {
+      console.error('ArenaScene.create error:', err);
+      throw err;
+    }
+  }
+
+  private createInner(): void {
     this.scale.on('resize', () => this.layout());
 
     bus.on('game:started', () => {
@@ -86,19 +100,22 @@ export class ArenaScene extends Phaser.Scene {
 
   private W(): number { return this.scale.width; }
   private H(): number { return this.scale.height; }
-  private groundY(): number { return this.H() * 0.74; }
+  private groundY(): number { return this.H() * 0.72; }
   private heroX(): number { return this.W() * 0.26; }
   private enemyX(): number { return this.W() * 0.68; }
+  // profundidad: la heroína está más cerca (más abajo), el enemigo más lejos
+  private heroY(): number { return this.groundY() + 26; }
+  private enemyY(): number { return this.groundY() + 4; }
 
   private layout(): void {
     if (this.currentZoneIndex >= 0) this.drawZone(this.currentZoneIndex, true);
     if (this.hero) {
-      this.hero.setPosition(this.heroX(), this.groundY());
-      this.heroShadow?.setPosition(this.heroX(), this.groundY() + 6);
+      this.hero.setPosition(this.heroX(), this.heroY());
+      this.heroShadow?.setPosition(this.heroX(), this.heroY() + 5);
     }
     if (this.enemy) {
-      this.enemy.setPosition(this.enemyX(), this.groundY());
-      this.enemyShadow?.setPosition(this.enemyX(), this.groundY() + 6);
+      this.enemy.setPosition(this.enemyX(), this.enemyY());
+      this.enemyShadow?.setPosition(this.enemyX(), this.enemyY() + 5);
     }
   }
 
@@ -108,47 +125,147 @@ export class ArenaScene extends Phaser.Scene {
     this.currentZoneIndex = zoneIndex;
     const zone = ZONES[zoneIndex];
     this.bgLayer?.destroy();
+    this.midLayer?.destroy();
+    this.decorLayer?.destroy();
+    this.floorLayer?.destroy();
+    this.fgLayer?.destroy();
     this.ambient?.destroy();
+    this.decorProps = [];
 
-    const c = this.add.container(0, 0).setDepth(-10);
-    this.bgLayer = c;
     const W = this.W();
     const H = this.H();
+    const gy = this.groundY();
 
-    // cielo degradado
+    // ── capa lejana: cielo + elemento celeste + siluetas ──
+    const bg = this.add.container(0, 0).setDepth(-12);
+    this.bgLayer = bg;
+
     const sky = this.add.graphics();
     sky.fillGradientStyle(zone.palette.sky[0], zone.palette.sky[0], zone.palette.sky[1], zone.palette.sky[1], 1);
     sky.fillRect(0, 0, W, H);
-    c.add(sky);
+    bg.add(sky);
 
-    // siluetas de fondo (parallax estático estilizado)
-    const fog = this.add.graphics();
-    fog.fillStyle(zone.palette.fog, 0.55);
-    for (let i = 0; i < 7; i++) {
+    // elemento celeste por zona
+    if (zoneIndex === 0 || zoneIndex === 3) {
+      // luna con halo (la Gran Gata vigila)
+      const halo = this.add.circle(W * 0.8, H * 0.18, 46, 0xfff4d6, 0.08);
+      const moon = this.add.circle(W * 0.8, H * 0.18, 26, 0xfff4d6, 0.85);
+      const crater = this.add.circle(W * 0.8 - 8, H * 0.18 - 5, 6, zone.palette.sky[1], 0.5);
+      bg.add([halo, moon, crater]);
+    }
+    if (zoneIndex === 3 || zoneIndex === 4) {
+      // estrellas
+      const stars = this.add.graphics();
+      for (let i = 0; i < 26; i++) {
+        const sxr = (i * 131) % W;
+        const syr = ((i * 73) % Math.floor(H * 0.45));
+        stars.fillStyle(0xffffff, 0.25 + ((i * 7) % 10) / 22);
+        stars.fillRect(sxr, syr, 2, 2);
+      }
+      bg.add(stars);
+    }
+    if (zoneIndex === 2) {
+      // resplandor de lava en el horizonte
+      const glow = this.add.graphics();
+      glow.fillGradientStyle(0xff5722, 0xff5722, 0xff5722, 0xff5722, 0, 0, 0.35, 0.35);
+      glow.fillRect(0, gy - 60, W, 68);
+      bg.add(glow);
+    }
+
+    // siluetas lejanas en dos planos (parallax al avanzar)
+    const farA = this.add.graphics();
+    farA.fillStyle(zone.palette.fog, 0.4);
+    const farB = this.add.graphics();
+    farB.fillStyle(zone.palette.fog, 0.66);
+    for (let i = -1; i < 9; i++) {
       const bx = (W / 7) * i + (i % 2) * 30;
-      const bh = H * (0.22 + ((i * 37) % 17) / 60);
-      if (zoneIndex === 0) fog.fillTriangle(bx, H, bx + 90, H - bh, bx + 180, H); // árboles
-      else if (zoneIndex === 2) fog.fillTriangle(bx - 20, H, bx + 70, H - bh * 1.1, bx + 200, H); // picos
-      else fog.fillRect(bx, H - bh, 70 + (i % 3) * 28, bh); // columnas/estalagmitas
+      const bh = H * (0.2 + ((i * 37 + 700) % 17) / 60);
+      const bh2 = H * (0.3 + ((i * 53 + 700) % 13) / 50);
+      if (zoneIndex === 0) {
+        farA.fillTriangle(bx, gy + 10, bx + 70, gy + 10 - bh, bx + 140, gy + 10);
+        farB.fillTriangle(bx + 50, gy + 12, bx + 110, gy + 12 - bh2 * 0.8, bx + 170, gy + 12);
+      } else if (zoneIndex === 1) {
+        // cristales gigantes
+        farA.fillTriangle(bx, gy + 10, bx + 34, gy + 10 - bh, bx + 68, gy + 10);
+        farB.fillTriangle(bx + 60, gy + 12, bx + 82, gy + 12 - bh2 * 0.7, bx + 104, gy + 12);
+      } else if (zoneIndex === 2) {
+        farA.fillTriangle(bx - 20, gy + 10, bx + 60, gy + 10 - bh * 1.1, bx + 180, gy + 10);
+        farB.fillTriangle(bx + 40, gy + 12, bx + 120, gy + 12 - bh2 * 0.7, bx + 220, gy + 12);
+      } else {
+        farA.fillRect(bx, gy + 10 - bh, 56 + (i % 3) * 24, bh);
+        farB.fillRect(bx + 70, gy + 12 - bh2 * 0.75, 40 + (i % 2) * 30, bh2 * 0.75);
+      }
     }
-    c.add(fog);
-
-    // suelo
-    const ground = this.add.graphics();
-    ground.fillStyle(zone.palette.ground, 1);
-    ground.fillRect(0, this.groundY() + 8, W, H - this.groundY());
-    ground.lineStyle(3, zone.palette.accent, 0.25);
-    ground.lineBetween(0, this.groundY() + 8, W, this.groundY() + 8);
-    c.add(ground);
-
-    // baldosas de piso pixel art
-    const tileScale = 3;
-    const tileW = 16 * tileScale;
-    for (let x = 0; x < W + tileW; x += tileW) {
-      const tile = this.add.image(x, this.groundY() + 10, zone.floorTiles[(x / tileW | 0) % zone.floorTiles.length]);
-      tile.setOrigin(0, 0).setScale(tileScale).setAlpha(0.5);
-      c.add(tile);
+    // brillos en los cristales de la cueva
+    if (zoneIndex === 1) {
+      for (let i = 0; i < 8; i++) {
+        farB.fillStyle(zone.palette.accent, 0.5);
+        farB.fillRect(((i * 167) % W), gy - 40 - ((i * 91) % Math.floor(H * 0.3)), 3, 3);
+      }
     }
+    bg.add([farA, farB]);
+
+    // ── suelo con perspectiva: baldosas en cuadrícula (contenedor con scroll
+    // envolvente: el patrón se repite cada 3 baldosas, 144px en pantalla) ──
+    const floorH = H - gy;
+    const tilePx = 48; // 16px × escala 3
+    const floor = this.add.container(0, 0).setDepth(-9);
+    this.floorLayer = floor;
+    const cols = Math.ceil(W / tilePx) + 4; // margen para el scroll
+    const rows = Math.ceil(floorH / tilePx) + 1;
+    for (let r = 0; r < rows; r++) {
+      for (let col = 0; col < cols; col++) {
+        const key = zone.floorTiles[(col + r) % zone.floorTiles.length];
+        const tile = this.add.image(col * tilePx, gy + r * tilePx, key).setOrigin(0, 0).setScale(3);
+        floor.add(tile);
+      }
+    }
+
+    const floorShade = this.add.graphics().setDepth(-8);
+    // más oscuro al fondo (lejos), más claro al frente (cerca)
+    floorShade.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.5, 0.5, 0.05, 0.05);
+    floorShade.fillRect(0, gy, W, floorH);
+    floorShade.lineStyle(3, zone.palette.accent, 0.35);
+    floorShade.lineBetween(0, gy, W, gy);
+
+    // ── props medios (detrás del combate) ──
+    const mid = this.add.container(0, 0).setDepth(-7);
+    this.midLayer = mid;
+    const midDefs: { key: string; scale: number; tint: number }[] = [
+      { key: 'column_wall', scale: 3.2, tint: 0x777799 },
+      { key: zoneIndex === 3 ? 'wall_banner_red' : 'wall_banner_blue', scale: 3.2, tint: 0xbbbbdd },
+      { key: 'column_wall', scale: 3.2, tint: 0x777799 },
+    ];
+    if (zoneIndex !== 0) {
+      midDefs.forEach((d, i) => {
+        const px = W * (0.16 + i * 0.3) + ((i * 53) % 40);
+        const img = this.add.image(px, gy + 2, d.key).setOrigin(0.5, 1).setScale(d.scale).setTint(d.tint).setAlpha(0.85);
+        mid.add(img);
+      });
+    }
+
+    // ── decoración a nivel de suelo (se recicla al avanzar) ──
+    const decor = this.add.container(0, 0).setDepth(-6);
+    this.decorLayer = decor;
+    const decorPool = this.decorPoolFor(zoneIndex);
+    for (let i = 0; i < 5; i++) {
+      const key = decorPool[i % decorPool.length];
+      const dx = (W / 5) * i + ((i * 97) % 60) + 30;
+      const dy = gy + 14 + ((i * 31) % Math.max(10, floorH - 40));
+      const img = this.add.image(dx, dy, key).setOrigin(0.5, 1).setScale(2.6).setTint(0xccccdd).setAlpha(0.9);
+      decor.add(img);
+      this.decorProps.push(img);
+    }
+
+    // ── viñeta frontal (profundidad) ──
+    const fg = this.add.container(0, 0).setDepth(35);
+    this.fgLayer = fg;
+    const vig = this.add.graphics();
+    vig.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.4, 0.4);
+    vig.fillRect(0, H - 64, W, 64);
+    vig.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.32, 0, 0, 0);
+    vig.fillRect(0, 0, W, 46);
+    fg.add(vig);
 
     // partículas ambientales (esporas, cristales, ascuas, magia)
     this.ambient = this.add.particles(0, 0, 'px', {
@@ -156,14 +273,63 @@ export class ArenaScene extends Phaser.Scene {
       y: { min: 0, max: H * 0.7 },
       lifespan: 6000,
       speedY: zoneIndex === 2 ? { min: -30, max: -12 } : { min: 6, max: 18 },
+      speedX: { min: -8, max: 8 },
       scale: { start: 0.7, end: 0 },
       alpha: { start: 0.5, end: 0 },
       quantity: 1,
-      frequency: 320,
+      frequency: 300,
       tint: zone.palette.accent,
     }).setDepth(-5);
 
     if (!instant) this.cameras.main.fadeIn(450, 0, 0, 0);
+  }
+
+  private decorPoolFor(zoneIndex: number): string[] {
+    switch (zoneIndex) {
+      case 0: return ['crate', 'skull', 'crate'];
+      case 1: return ['skull', 'crate', 'skull'];
+      case 2: return ['skull', 'skull', 'crate'];
+      case 3: return ['crate', 'skull', 'hole'];
+      default: return ['skull', 'hole', 'skull'];
+    }
+  }
+
+  // desplazamiento parallax al avanzar: el mundo "camina" hacia atrás
+  private parallaxStep(): void {
+    const W = this.W();
+    if (this.floorLayer) {
+      // se desplaza exactamente un período del patrón y se reinicia: scroll continuo
+      const floor = this.floorLayer;
+      this.tweens.add({
+        targets: floor,
+        x: floor.x - 144,
+        duration: 650,
+        ease: 'Quad.easeOut',
+        onComplete: () => { floor.x = 0; },
+      });
+    }
+    if (this.bgLayer) this.tweens.add({ targets: this.bgLayer, x: this.bgLayer.x - 18, duration: 650, ease: 'Quad.easeOut' });
+    if (this.midLayer) this.tweens.add({ targets: this.midLayer, x: this.midLayer.x - 64, duration: 650, ease: 'Quad.easeOut' });
+    if (this.decorLayer) {
+      const decor = this.decorLayer;
+      this.tweens.add({
+        targets: decor, x: decor.x - 150, duration: 650, ease: 'Quad.easeOut',
+        onComplete: () => {
+          // reciclar props que salieron por la izquierda
+          for (const img of this.decorProps) {
+            if (img.x + decor.x < -50) {
+              img.x = W - decor.x + 60 + Math.random() * 80;
+              const pool = this.decorPoolFor(this.currentZoneIndex);
+              img.setTexture(pool[Math.floor(Math.random() * pool.length)]);
+              img.y = this.groundY() + 14 + Math.random() * Math.max(10, this.H() - this.groundY() - 44);
+            }
+          }
+        },
+      });
+    }
+    // los planos lejanos se reinician si se alejan demasiado (invisible al jugador)
+    if (this.bgLayer && this.bgLayer.x < -W) this.bgLayer.x = 0;
+    if (this.midLayer && this.midLayer.x < -W) this.midLayer.x = 0;
   }
 
   // ─── Heroína ──────────────────────────────────────────────────────────────
@@ -176,9 +342,10 @@ export class ArenaScene extends Phaser.Scene {
     this.hero?.destroy();
     this.heroShadow?.destroy();
     const cls = CLASSES[getState().player.classId];
-    this.heroShadow = this.add.ellipse(this.heroX(), this.groundY() + 6, 70, 16, 0x000000, 0.35);
-    this.hero = this.add.sprite(this.heroX(), this.groundY() + 4, `${cls.spriteKey}_idle_anim_f0`);
-    this.hero.setOrigin(0.5, 1).setScale(cls.heroScale);
+    this.heroShadow = this.add.ellipse(this.heroX(), this.heroY() + 5, 80, 16, 0x000000, 0.4).setDepth(1);
+    this.hero = this.add.sprite(this.heroX(), this.heroY(), `${cls.spriteKey}_idle_anim_f0`);
+    this.hero.setOrigin(0.5, 1).setScale(cls.heroScale).setDepth(2);
+    this.hero.setFlipX(cls.faceLeft === true);
     if (cls.tint) this.hero.setTint(cls.tint);
     this.hero.play(`${cls.spriteKey}_idle_anim`);
     this.heroAttacking = false;
@@ -190,12 +357,24 @@ export class ArenaScene extends Phaser.Scene {
     if (this.hero && this.anims.exists(idle)) this.hero.play(idle);
   }
 
-  // Animación de zarpazo al atacar (vuelve a idle al terminar)
+  // Animación de zarpazo al atacar (vuelve a idle al terminar).
+  // Las gatas sin anim de ataque hacen una embestida rápida.
   private heroAttackAnim(): void {
     if (!this.hero || this.heroAttacking) return;
     const cls = CLASSES[getState().player.classId];
     const atk = `${cls.spriteKey}_attack_anim`;
-    if (!this.anims.exists(atk)) return;
+    if (!this.anims.exists(atk)) {
+      this.heroAttacking = true;
+      this.tweens.add({
+        targets: this.hero,
+        x: this.heroX() + 34,
+        duration: 90,
+        yoyo: true,
+        ease: 'Quad.easeOut',
+        onComplete: () => { this.heroAttacking = false; },
+      });
+      return;
+    }
     this.heroAttacking = true;
     this.hero.play(atk);
     this.hero.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
@@ -221,7 +400,7 @@ export class ArenaScene extends Phaser.Scene {
       if (this.anims.exists(die)) {
         this.hero.play(die);
       } else {
-        this.tweens.add({ targets: this.hero, angle: -90, y: this.groundY() + 4, duration: 600, ease: 'Quad.easeIn' });
+        this.tweens.add({ targets: this.hero, angle: -90, y: this.heroY() + 2, duration: 600, ease: 'Quad.easeIn' });
       }
     }
     bus.emit('game:over');
@@ -243,9 +422,11 @@ export class ArenaScene extends Phaser.Scene {
 
     const key = this.animKeyFor(enemy.def.spriteKey, 'idle');
     const shadowW = enemy.def.spriteKey === 'cat' ? 60 * (enemy.def.scale / 2.5) : 80 * (enemy.def.scale / 4);
-    this.enemyShadow = this.add.ellipse(this.enemyX(), this.groundY() + 6, shadowW, 18, 0x000000, 0.35);
-    this.enemy = this.add.sprite(this.enemyX() + 120, this.groundY() + (enemy.def.spriteKey === 'cat' ? 4 : 0), `${enemy.def.spriteKey}_idle_anim_f0`);
-    this.enemy.setOrigin(0.5, 1).setScale(enemy.def.scale).setFlipX(true).setAlpha(0);
+    // el enemigo está "más lejos": algo más arriba, algo más pequeño y con sombra suave
+    const depthScale = 0.93;
+    this.enemyShadow = this.add.ellipse(this.enemyX(), this.enemyY() + 5, shadowW * depthScale, 16, 0x000000, 0.3).setDepth(1);
+    this.enemy = this.add.sprite(this.enemyX() + 120, this.enemyY(), `${enemy.def.spriteKey}_idle_anim_f0`);
+    this.enemy.setOrigin(0.5, 1).setScale(enemy.def.scale * depthScale).setFlipX(true).setAlpha(0).setDepth(2);
     if (enemy.def.tint) this.enemy.setTint(enemy.def.tint);
     if (this.anims.exists(key)) this.enemy.play(key);
 
@@ -284,7 +465,7 @@ export class ArenaScene extends Phaser.Scene {
     this.tweens.add({ targets: e, x: this.enemyX() + (crit ? 16 : 8), duration: 50, yoyo: true });
 
     const ox = this.enemyX() + Phaser.Math.Between(-30, 30);
-    const oy = this.groundY() - 80 * (e.scaleY / 4) - Phaser.Math.Between(0, 50);
+    const oy = this.enemyY() - 80 * (e.scaleY / 4) - Phaser.Math.Between(0, 50);
     if (source === 'dps') {
       this.floatText(String(amount), ox, oy, '#9ecbff', 10);
     } else if (crit) {
@@ -338,7 +519,7 @@ export class ArenaScene extends Phaser.Scene {
       targets: e,
       alpha: 0,
       scaleY: e.scaleY * 0.2,
-      y: this.groundY() + 8,
+      y: this.enemyY() + 6,
       duration: 380,
       ease: 'Quad.easeIn',
       onComplete: () => e.destroy(),
@@ -375,7 +556,7 @@ export class ArenaScene extends Phaser.Scene {
   private showRestPiece(): void {
     this.clearEnemySprites();
     this.clearSetPiece();
-    const c = this.add.container(this.enemyX(), this.groundY());
+    const c = this.add.container(this.enemyX(), this.enemyY()).setDepth(2);
     this.fountainPiece(c);
     c.setAlpha(0);
     this.tweens.add({ targets: c, alpha: 1, duration: 400 });
@@ -385,7 +566,7 @@ export class ArenaScene extends Phaser.Scene {
   private showEventPiece(eventType: string): void {
     this.clearEnemySprites();
     this.clearSetPiece();
-    const c = this.add.container(this.enemyX(), this.groundY());
+    const c = this.add.container(this.enemyX(), this.enemyY()).setDepth(2);
 
     switch (eventType) {
       case 'mimic': {
@@ -459,9 +640,9 @@ export class ArenaScene extends Phaser.Scene {
   private skillFx(skillId: string): void {
     if (!this.hero) return;
     const hx = this.heroX();
-    const hy = this.groundY() - 50;
+    const hy = this.heroY() - 55;
     const ex = this.enemyX();
-    const ey = this.groundY() - 60;
+    const ey = this.enemyY() - 65;
     sfx.skill();
     this.heroAttackAnim();
 
@@ -535,9 +716,9 @@ export class ArenaScene extends Phaser.Scene {
               quantity: 2, frequency: 14, follow: meteor,
             }).setDepth(24);
             this.tweens.add({
-              targets: meteor, x: mx, y: this.groundY() - 10, duration: 260, ease: 'Quad.easeIn',
+              targets: meteor, x: mx, y: this.enemyY() - 8, duration: 260, ease: 'Quad.easeIn',
               onComplete: () => {
-                this.burst(mx, this.groundY() - 14, [0xff7043, 0xffca28], 12, 150, 240);
+                this.burst(mx, this.enemyY() - 12, [0xff7043, 0xffca28], 12, 150, 240);
                 this.cameras.main.shake(70, 0.005);
                 meteor.destroy();
                 this.time.delayedCall(300, () => trail.destroy());
@@ -633,6 +814,7 @@ export class ArenaScene extends Phaser.Scene {
   private nodeTransition(): void {
     sfx.advance();
     this.clearSetPiece();
+    this.parallaxStep(); // el escenario se desplaza: se aprecia el avance
     if (!this.hero) return;
     const cls = CLASSES[getState().player.classId];
     const runKey = `${cls.spriteKey}_run_anim`;
@@ -641,14 +823,12 @@ export class ArenaScene extends Phaser.Scene {
     this.heroBobTween = this.tweens.add({
       targets: this.hero,
       x: { from: this.heroX() - 50, to: this.heroX() },
-      duration: 600,
+      duration: 650,
       ease: 'Quad.easeOut',
       onComplete: () => {
         if (!this.heroAttacking) this.heroIdle();
       },
     });
-    // parpadeo suave del fondo para sensación de avance
-    this.cameras.main.flash(220, 8, 8, 16);
   }
 
   private transitionTo(fn: () => void): void {

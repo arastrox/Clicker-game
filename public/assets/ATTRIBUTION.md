@@ -1,6 +1,12 @@
 # Créditos de Assets
 
-## sprites/frames/cat_*.png — Cat Fighter
+## sprites/frames/cat_rogue_* y cat_mage_* — Cat sprites (gata cuadrúpeda)
+- Fuente: https://opengameart.org/content/cat-sprites
+- Licencia: **CC0 1.0** (dominio público)
+- La Hechicera lleva un sombrero de bruja pixel añadido programáticamente
+  (tools/make-mage-cat.ps1) sobre los mismos frames.
+
+## sprites/frames/cat_*.png — Cat Fighter (gata bípeda de la Guerrera)
 - Autor: **dogchicken** — https://opengameart.org/content/cat-fighter-sprite-sheet
 - Licencia: **CC-BY 3.0** (requiere esta atribución)
 - Sprites de la heroína felina (idle, correr, ataque, derrota), extraídos de los GIF originales con fondo transparente.

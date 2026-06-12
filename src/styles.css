@@ -248,20 +248,18 @@ button { font-family: inherit; }
 .stat-row:hover { background: rgba(255, 122, 217, 0.08); }
 .stat-row b { color: var(--gold); font-variant-numeric: tabular-nums; }
 
-/* tooltip de desglose de stats */
+/* tooltip de desglose de stats — posición fija (JS) para no quedar
+   recortado por el overflow del panel ni tapado por la arena */
 .stat-tip {
-  position: absolute;
-  left: 100%;
-  top: 50%;
+  position: fixed;
   transform: translateY(-50%);
-  margin-left: 10px;
   width: 210px;
   background: #2b1349;
   border: 2px solid var(--accent);
   border-radius: 9px;
   padding: 10px;
   font-size: var(--t-sm);
-  z-index: 60;
+  z-index: 300;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
   pointer-events: none;
   opacity: 0;

@@ -74,6 +74,18 @@ export function initHud(): void {
     if (idx >= 0) trySkillByIndex(idx);
   });
 
+  // tooltips de stats: posicionados en fixed junto a la fila (por delegación,
+  // sobrevive a los re-render del panel)
+  $('stats-list').addEventListener('mouseover', (ev) => {
+    const row = (ev.target as HTMLElement).closest('.stat-row');
+    const tip = row?.querySelector('.stat-tip') as HTMLElement | null;
+    if (!row || !tip) return;
+    const r = row.getBoundingClientRect();
+    tip.style.left = `${r.right + 10}px`;
+    const top = Math.min(Math.max(r.top + r.height / 2, 90), window.innerHeight - 110);
+    tip.style.top = `${top}px`;
+  });
+
   // refresco por frame (barras de combate y cooldowns)
   setUiTick(uiTick);
 }

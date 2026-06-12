@@ -93,11 +93,13 @@ export function spawnEnemyForNode(node: MapNode, def: EnemyDef, opts: SpawnOpts 
   const isBoss = opts.boss ?? node.type === 'boss';
   const isMimic = opts.mimic ?? false;
 
-  let hp = Math.round((20 + lvl * 12) * Math.pow(1.045, Math.min(lvl, 60)));
+  // balance: +40% de vida y ataques 30% más rápidos que el diseño original,
+  // para frenar el avance acelerado por la historia
+  let hp = Math.round((20 + lvl * 12) * Math.pow(1.045, Math.min(lvl, 60)) * 1.4);
   let atk = Math.round(3 + lvl * 1.6);
-  let interval = 3.0;
-  if (isElite) { hp *= 2; atk = Math.round(atk * 1.5); interval = 2.6; }
-  if (isBoss) { hp *= 6; atk = Math.round(atk * 2); interval = 2.4; }
+  let interval = 2.3;
+  if (isElite) { hp *= 2; atk = Math.round(atk * 1.5); interval = 2.0; }
+  if (isBoss) { hp *= 6; atk = Math.round(atk * 2); interval = 1.85; }
   if (isMimic) { hp = Math.round(hp * 1.5); atk = Math.round(atk * 1.2); }
 
   let xp = Math.round(lvl * 8 * (isElite ? 1.8 : 1) * (isBoss ? 5 : 1));

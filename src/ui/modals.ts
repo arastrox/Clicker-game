@@ -49,10 +49,12 @@ export function closeModal(): void {
 
 // ─── Creación de personaje ───────────────────────────────────────────────────
 
+// la Guerrera (gata blanca) se tiñe naranja; Hechicera y Pícara ya tienen
+// sus propios modelos (gata bruja con sombrero / gata callejera)
 const CLASS_FUR_FILTER: Record<ClassId, string> = {
   warrior: 'sepia(1) saturate(2.4) hue-rotate(-12deg) brightness(1.04)',
-  mage: 'sepia(1) saturate(1.8) hue-rotate(214deg) brightness(1.05)',
-  rogue: 'sepia(0.5) saturate(0.9) hue-rotate(170deg) brightness(0.96)',
+  mage: 'brightness(1.15) drop-shadow(0 0 4px rgba(179,136,255,0.6))',
+  rogue: 'brightness(1.1) drop-shadow(0 0 4px rgba(140,160,220,0.45))',
 };
 
 export function showCharacterCreation(): void {
